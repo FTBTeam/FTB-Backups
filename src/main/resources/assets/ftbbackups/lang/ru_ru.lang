@@ -1,0 +1,22 @@
+# Config
+ftbbackups.general.silent=Тихий
+ftbbackups.general.backups_to_keep=Резервные копии для хранения
+ftbbackups.general.backup_timer=Таймер резервного копирования
+ftbbackups.general.compression_level=Уровень сжатия
+ftbbackups.general.folder=Папка
+ftbbackups.general.display_file_size=Отображать размер файла
+ftbbackups.general.use_separate_thread=Использовать отдельный поток
+ftbbackups.general.extra_files=Дополнительные файлы
+ftbbackups.general.max_total_size=Максимальный общий размер
+ftbbackups.general.disable_level_saving=Отключить сохранение уровня
+
+# Misc
+ftbbackups.lang.timer=Резервное копирование сервера в: %s
+ftbbackups.lang.start=Резервное копирование сервера началось!
+ftbbackups.lang.end_1=Резервное копирование сервера выполнено в %s!
+ftbbackups.lang.end_2=Резервное копирование сервера выполнено в %s! (%s)
+ftbbackups.lang.fail=Не удалось сохранить мир! (%s)
+ftbbackups.lang.manual_launch=%s запустил ручное резервное копирование!
+ftbbackups.lang.already_running=Резервное копирование выполняется!
+ftbbackups.lang.size=Текущий размер мира: %s, общий размер папки резервных копий: %s
+ftbbackups.lang.saving_failed=Не удалось сохранить мир!
