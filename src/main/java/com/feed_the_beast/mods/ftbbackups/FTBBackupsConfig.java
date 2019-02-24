@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  * @author LatvianModder
  */
 @Mod.EventBusSubscriber(modid = FTBBackups.MOD_ID)
-@Config(modid = FTBBackups.MOD_ID, category = "", name = "ftbutilities/backups")
+@Config(modid = FTBBackups.MOD_ID, category = "")
 public class FTBBackupsConfig
 {
 	public static final General general = new General();
