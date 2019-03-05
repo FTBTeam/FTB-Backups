@@ -1,4 +1,5 @@
 # Config
+ftbbackups.general=Общее
 ftbbackups.general.silent=Тихий
 ftbbackups.general.backups_to_keep=Резервные копии для хранения
 ftbbackups.general.backup_timer=Таймер резервного копирования
@@ -9,9 +10,13 @@ ftbbackups.general.use_separate_thread=Использовать отдельны
 ftbbackups.general.extra_files=Дополнительные файлы
 ftbbackups.general.max_total_size=Максимальный общий размер
 ftbbackups.general.disable_level_saving=Отключить сохранение уровня
+ftbbackups.general.only_if_players_online=Резервное копирование только если игроки находятся в сети
+ftbbackups.general.force_on_shutdown=Принудительное резервное копирование при завершении работы
+ftbbackups.general.buffer_size=Размер буфера
 
 # Misc
 ftbbackups.lang.timer=Резервное копирование сервера в: %s
+ftbbackups.lang.timer_progress=[%d%% | %d / %d]
 ftbbackups.lang.start=Резервное копирование сервера началось!
 ftbbackups.lang.end_1=Резервное копирование сервера выполнено в %s!
 ftbbackups.lang.end_2=Резервное копирование сервера выполнено в %s! (%s)
@@ -20,3 +25,9 @@ ftbbackups.lang.manual_launch=%s запустил ручное резервно�
 ftbbackups.lang.already_running=Резервное копирование выполняется!
 ftbbackups.lang.size=Текущий размер мира: %s, общий размер папки резервных копий: %s
 ftbbackups.lang.saving_failed=Не удалось сохранить мир!
+
+# Commands
+commands.backup.usage=/backup
+commands.backup.start.usage=/backup start [пользовательское имя]
+commands.backup.time.usage=/backup time
+commands.backup.size.usage=/backup size
