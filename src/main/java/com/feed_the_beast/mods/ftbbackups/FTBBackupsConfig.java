@@ -83,7 +83,11 @@ public class FTBBackupsConfig
 		{
 			String s = BackupUtils.removeAllWhitespace(max_total_size).toUpperCase();
 
-			if (s.endsWith("GB"))
+			if (s.endsWith("TB"))
+			{
+				return Long.parseLong(s.substring(0, s.length() - 2)) * BackupUtils.TB;
+			}
+			else if (s.endsWith("GB"))
 			{
 				return Long.parseLong(s.substring(0, s.length() - 2)) * BackupUtils.GB;
 			}

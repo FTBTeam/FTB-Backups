@@ -23,7 +23,8 @@ ftbbackups.lang.end_2=Serversicherung ist in %s fertig! (%s)
 ftbbackups.lang.fail=Die Speicherung der Welt ist fehlgeschlagen! (%s)
 ftbbackups.lang.manual_launch=%s startete eine manuelle Sicherung!
 ftbbackups.lang.already_running=Sicherung in Arbeit!
-ftbbackups.lang.size=Aktuelle Weltgröße: %s; Die Größe des Sicherungsordners insgesamt: %s
+ftbbackups.lang.size.1=Aktuelle Weltgröße: %s
+ftbbackups.lang.size.2=Die Größe des Sicherungsordners insgesamt: %s
 ftbbackups.lang.saving_failed=Die Speicherung der Welt ist fehlgeschlagen!
 
 # Commands

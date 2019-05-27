@@ -28,13 +28,15 @@ import java.util.List;
  */
 public class BackupUtils
 {
-	public static final int KB = 1024;
-	public static final int MB = KB * 1024;
-	public static final int GB = MB * 1024;
+	public static final long KB = 1024L;
+	public static final long MB = KB * 1024L;
+	public static final long GB = MB * 1024L;
+	public static final long TB = GB * 1024L;
 
 	public static final double KB_D = 1024D;
 	public static final double MB_D = KB_D * 1024D;
 	public static final double GB_D = MB_D * 1024D;
+	public static final double TB_D = GB_D * 1024D;
 
 	public static String getTimeString(long millis)
 	{
@@ -134,7 +136,11 @@ public class BackupUtils
 
 	public static String getSizeString(double b)
 	{
-		if (b >= GB_D)
+		if (b >= TB_D)
+		{
+			return String.format("%.1fTB", b / TB_D);
+		}
+		else if (b >= GB_D)
 		{
 			return String.format("%.1fGB", b / GB_D);
 		}
