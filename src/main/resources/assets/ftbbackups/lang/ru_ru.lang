@@ -24,7 +24,8 @@ ftbbackups.lang.fail=Не удалось сохранить мир! (%s)
 ftbbackups.lang.manual_launch=%s запустил ручное резервное копирование!
 ftbbackups.lang.already_running=Резервное копирование выполняется!
 ftbbackups.lang.size.1=Текущий размер мира: %s
-ftbbackups.lang.size.2=общий размер папки резервных копий: %s
+ftbbackups.lang.size.2=Общий размер папки резервных копий: %s
+ftbbackups.lang.size.3=Доступно: %s
 ftbbackups.lang.saving_failed=Не удалось сохранить мир!
 
 # Commands
