@@ -1,15 +1,24 @@
 package com.feed_the_beast.mods.ftbbackups.net;
 
 import com.feed_the_beast.mods.ftbbackups.FTBBackups;
-import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 public class FTBBackupsNetHandler
 {
-	public static final SimpleNetworkWrapper NET = new SimpleNetworkWrapper(FTBBackups.MOD_ID);
+	public static SimpleChannel main;
+	private static final String MAIN_VERSION = "1";
 
 	public static void init()
 	{
-		NET.registerMessage(new MessageBackupProgress.Handler(), MessageBackupProgress.class, 1, Side.CLIENT);
+		main = NetworkRegistry.ChannelBuilder
+				.named(new ResourceLocation(FTBBackups.MOD_ID, "main"))
+				.clientAcceptedVersions(MAIN_VERSION::equals)
+				.serverAcceptedVersions(MAIN_VERSION::equals)
+				.networkProtocolVersion(() -> MAIN_VERSION)
+				.simpleChannel();
+
+		main.registerMessage(1, BackupProgressMessage.class, BackupProgressMessage::write, BackupProgressMessage::new, BackupProgressMessage::handle);
 	}
 }

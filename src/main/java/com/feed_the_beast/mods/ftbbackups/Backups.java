@@ -1,19 +1,21 @@
 package com.feed_the_beast.mods.ftbbackups;
 
+import com.feed_the_beast.mods.ftbbackups.net.BackupProgressMessage;
 import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
-import com.feed_the_beast.mods.ftbbackups.net.MessageBackupProgress;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.play.server.SChatPacket;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.storage.ThreadedFileIOBase;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.network.PacketDistributor;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -38,15 +39,15 @@ public enum Backups
 	public int doingBackup = 0;
 	public boolean printFiles = false;
 
-	private int currentFile = 0;
-	private int totalFiles = 0;
+	public int currentFile = 0;
+	public int totalFiles = 0;
 	private String currentFileName = "";
 	public boolean hadPlayersOnline = false;
 
-	public void init()
+	public void init(MinecraftServer server)
 	{
-		File dataDir = FMLCommonHandler.instance().getMinecraftServerInstance().getDataDirectory();
-		backupsFolder = FTBBackupsConfig.general.folder.trim().isEmpty() ? new File(dataDir, "backups") : new File(FTBBackupsConfig.general.folder.trim());
+		File dataDir = server.getDataDirectory();
+		backupsFolder = FTBBackupsConfig.folder.trim().isEmpty() ? new File(dataDir, "backups") : new File(FTBBackupsConfig.folder.trim());
 		doingBackup = 0;
 		backups.clear();
 
@@ -87,17 +88,17 @@ public enum Backups
 		}
 
 		FTBBackups.LOGGER.info("Backups folder - " + backupsFolder.getAbsolutePath());
-		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.general.time();
+		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
 	}
 
 	public void tick(MinecraftServer server, long now)
 	{
 		if (nextBackup > 0L && nextBackup <= now)
 		{
-			if (!FTBBackupsConfig.general.only_if_players_online || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty())
+			if (!FTBBackupsConfig.onlyIfPlayersOnline || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty())
 			{
 				hadPlayersOnline = false;
-				run(server, server, "");
+				run(server, true, new StringTextComponent("Server"), "");
 			}
 		}
 
@@ -105,9 +106,9 @@ public enum Backups
 		{
 			doingBackup = 0;
 
-			if (FTBBackupsConfig.general.disable_level_saving)
+			if (FTBBackupsConfig.disableLevelSaving)
 			{
-				for (WorldServer world : server.worlds)
+				for (ServerWorld world : server.getWorlds())
 				{
 					if (world != null)
 					{
@@ -116,9 +117,9 @@ public enum Backups
 				}
 			}
 
-			if (!FTBBackupsConfig.general.silent)
+			if (!FTBBackupsConfig.silent)
 			{
-				FTBBackupsNetHandler.NET.sendToAll(new MessageBackupProgress(0, 0));
+				FTBBackupsNetHandler.main.send(PacketDistributor.ALL.noArg(), new BackupProgressMessage(0, 0));
 			}
 		}
 		else if (doingBackup > 0 && printFiles)
@@ -128,45 +129,39 @@ public enum Backups
 				FTBBackups.LOGGER.info("[" + currentFile + " | " + (int) ((currentFile / (double) totalFiles) * 100D) + "%]: " + currentFileName);
 			}
 
-			if (!FTBBackupsConfig.general.silent)
+			if (!FTBBackupsConfig.silent)
 			{
-				FTBBackupsNetHandler.NET.sendToAll(new MessageBackupProgress(currentFile, totalFiles));
+				FTBBackupsNetHandler.main.send(PacketDistributor.ALL.noArg(), new BackupProgressMessage(currentFile, totalFiles));
 			}
 		}
 	}
 
-	public void notifyAll(MinecraftServer server, Function<ICommandSender, ITextComponent> function, boolean error)
+	public void notifyAll(MinecraftServer server, ITextComponent component, boolean error)
 	{
-		for (EntityPlayerMP player : server.getPlayerList().getPlayers())
-		{
-			ITextComponent component = function.apply(player);
-			component.getStyle().setColor(error ? TextFormatting.DARK_RED : TextFormatting.LIGHT_PURPLE);
-			player.sendStatusMessage(component, true);
-		}
-
-		FTBBackups.LOGGER.info(function.apply(null).getUnformattedText());
+		component = component.deepCopy();
+		component.getStyle().setColor(error ? TextFormatting.DARK_RED : TextFormatting.LIGHT_PURPLE);
+		FTBBackups.LOGGER.info(component.getString());
+		server.getPlayerList().sendPacketToAllPlayers(new SChatPacket(component, ChatType.GAME_INFO));
 	}
 
-	public boolean run(MinecraftServer server, ICommandSender sender, String customName)
+	public boolean run(MinecraftServer server, boolean auto, ITextComponent name, String customName)
 	{
 		if (doingBackup != 0)
 		{
 			return false;
 		}
 
-		boolean auto = !(sender instanceof EntityPlayerMP);
-
-		if (auto && !FTBBackupsConfig.general.enabled)
+		if (auto && !FTBBackupsConfig.auto)
 		{
 			return false;
 		}
 
-		notifyAll(server, player -> FTBBackups.lang(player, "ftbbackups.lang.start", sender.getName()), false);
-		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.general.time();
+		notifyAll(server, new TranslationTextComponent("ftbbackups.lang.start", name), false);
+		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
 
-		if (FTBBackupsConfig.general.disable_level_saving)
+		if (FTBBackupsConfig.disableLevelSaving)
 		{
-			for (WorldServer world : server.worlds)
+			for (ServerWorld world : server.getWorlds())
 			{
 				if (world != null)
 				{
@@ -177,49 +172,43 @@ public enum Backups
 
 		doingBackup = 1;
 
-		ThreadedFileIOBase.getThreadedIOInstance().queueIO(() ->
+		try
 		{
-			try
-			{
-				doBackup(server, customName);
-			}
-			catch (Exception ex)
-			{
-				ex.printStackTrace();
-			}
+			server.getPlayerList().saveAllPlayerData();
 
-			doingBackup = 2;
-			return false;
-		});
+			if (server.save(true, true, true))
+			{
+				//ThreadedFileIOBase.getThreadedIOInstance().queueIO(() ->
+				new Thread(() -> {
+					try
+					{
+						doBackup(server, customName);
+					}
+					catch (Exception ex)
+					{
+						ex.printStackTrace();
+					}
+
+					doingBackup = 2;
+				}).start();
+			}
+			else
+			{
+				notifyAll(server, new TranslationTextComponent("ftbbackups.lang.saving_failed"), true);
+			}
+		}
+		catch (Exception ex)
+		{
+			notifyAll(server, new TranslationTextComponent("ftbbackups.lang.saving_failed"), true);
+			ex.printStackTrace();
+		}
 
 		return true;
 	}
 
 	private void doBackup(MinecraftServer server, String customName)
 	{
-		File src = server.getWorld(0).getSaveHandler().getWorldDirectory();
-
-		try
-		{
-			if (server.getPlayerList() != null)
-			{
-				server.getPlayerList().saveAllPlayerData();
-			}
-
-			for (WorldServer world : server.worlds)
-			{
-				if (world != null)
-				{
-					world.saveAllChunks(true, null);
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			notifyAll(server, player -> FTBBackups.lang(player, "ftbbackups.lang.saving_failed"), true);
-			ex.printStackTrace();
-			return;
-		}
+		File src = server.getWorld(DimensionType.OVERWORLD).getSaveHandler().getWorldDirectory();
 
 		Calendar time = Calendar.getInstance();
 		File dstFile;
@@ -262,7 +251,7 @@ public enum Backups
 				}
 			};
 
-			for (String s : FTBBackupsConfig.general.extra_files)
+			for (String s : FTBBackupsConfig.extraFiles)
 			{
 				consumer.accept(new File(s));
 			}
@@ -286,7 +275,7 @@ public enum Backups
 			{
 				backups.sort(null);
 
-				int backupsToKeep = FTBBackupsConfig.general.backups_to_keep - 1;
+				int backupsToKeep = FTBBackupsConfig.backupsToKeep - 1;
 
 				if (backupsToKeep > 0 && backups.size() > backupsToKeep)
 				{
@@ -305,7 +294,7 @@ public enum Backups
 
 				if (fileSize > 0L)
 				{
-					long freeSpace = Math.min(FTBBackupsConfig.general.getMaxTotalSize(), backupsFolder.getFreeSpace());
+					long freeSpace = Math.min(FTBBackupsConfig.maxTotalSize, backupsFolder.getFreeSpace());
 
 					while (totalSize + fileSize > freeSpace && !backups.isEmpty())
 					{
@@ -321,7 +310,7 @@ public enum Backups
 			FTBBackups.LOGGER.info("Backing up " + totalFiles + " files...");
 			printFiles = true;
 
-			if (FTBBackupsConfig.general.compression_level > 0)
+			if (FTBBackupsConfig.compressionLevel > 0)
 			{
 				out.append(".zip");
 				dstFile = BackupUtils.newFile(new File(backupsFolder, out.toString()));
@@ -329,9 +318,9 @@ public enum Backups
 				long start = System.currentTimeMillis();
 
 				ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(dstFile));
-				zos.setLevel(FTBBackupsConfig.general.compression_level);
+				zos.setLevel(FTBBackupsConfig.compressionLevel);
 
-				byte[] buffer = new byte[FTBBackupsConfig.general.buffer_size];
+				byte[] buffer = new byte[FTBBackupsConfig.bufferSize];
 
 				FTBBackups.LOGGER.info("Compressing " + totalFiles + " files...");
 
@@ -395,10 +384,10 @@ public enum Backups
 		}
 		catch (Exception ex)
 		{
-			if (!FTBBackupsConfig.general.silent)
+			if (!FTBBackupsConfig.silent)
 			{
 				String errorName = ex.getClass().getName();
-				notifyAll(server, player -> FTBBackups.lang(player, "ftbbackups.lang.fail", errorName), true);
+				notifyAll(server, new TranslationTextComponent("ftbbackups.lang.fail", errorName), true);
 			}
 
 			ex.printStackTrace();
@@ -420,11 +409,12 @@ public enum Backups
 
 		BackupUtils.toJson(new File(server.getDataDirectory(), "local/ftbutilities/backups.json"), array, true);
 
-		if (error == null && FTBBackupsConfig.general.silent)
+		if (error == null && !FTBBackupsConfig.silent)
 		{
 			String timeString = BackupUtils.getTimeString(System.currentTimeMillis() - time.getTimeInMillis());
+			ITextComponent component;
 
-			if (FTBBackupsConfig.general.display_file_size)
+			if (FTBBackupsConfig.displayFileSize)
 			{
 				long totalSize = 0L;
 
@@ -436,12 +426,15 @@ public enum Backups
 				String sizeB = BackupUtils.getSizeString(fileSize);
 				String sizeT = BackupUtils.getSizeString(totalSize);
 				String sizeString = sizeB.equals(sizeT) ? sizeB : (sizeB + " | " + sizeT);
-				notifyAll(server, player -> FTBBackups.lang(player, "ftbbackups.lang.end_2", timeString, sizeString), false);
+				component = new TranslationTextComponent("ftbbackups.lang.end_2", timeString, sizeString);
 			}
 			else
 			{
-				notifyAll(server, player -> FTBBackups.lang(player, "ftbbackups.lang.end_1", timeString), false);
+				component = new TranslationTextComponent("ftbbackups.lang.end_1", timeString);
 			}
+
+			component.getStyle().setColor(TextFormatting.LIGHT_PURPLE);
+			server.getPlayerList().sendMessage(component, false);
 		}
 	}
 
