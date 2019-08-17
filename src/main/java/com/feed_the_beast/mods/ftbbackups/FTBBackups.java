@@ -22,7 +22,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Mod(FTBBackups.MOD_ID)
-@Mod.EventBusSubscriber
 public class FTBBackups
 {
 	public static final String MOD_ID = "ftbbackups";

@@ -35,7 +35,7 @@ minecraft {
 			property 'forge.logging.console.level', 'debug'
 
 			mods {
-				examplemod {
+				ftbbackups {
 					source sourceSets.main
 				}
 			}
@@ -47,7 +47,7 @@ minecraft {
 			property 'forge.logging.console.level', 'debug'
 
 			mods {
-				examplemod {
+				ftbbackups {
 					source sourceSets.main
 				}
 			}
@@ -61,15 +61,12 @@ minecraft {
 			args '--mod', 'hcmc', '--all', '--output', file('src/generated/resources/')
 
 			mods {
-				hcmc {
+				ftbbackups {
 					source sourceSets.main
 				}
 			}
 		}
 	}
-
-	//replace "0.0.0.ftbbackups", project.version
-	//replaceIn project.mod_reference
 }
 
 dependencies {
@@ -79,7 +76,7 @@ dependencies {
 jar {
 	manifest {
 		attributes([
-				"Specification-Title"     : "ftbutilitiesbackups",
+				"Specification-Title"     : "ftbbackups",
 				"Specification-Vendor"    : "LatvianModder",
 				"Specification-Version"   : "1", // We are version 1 of ourselves
 				"Implementation-Title"    : project.name,
@@ -95,12 +92,6 @@ def reobfArtifact = artifacts.add('default', reobfFile) {
 	type 'jar'
 	builtBy 'reobfJar'
 }
-
-/*
-artifacts {
-	archives sourceJar
-}
- */
 
 if (ENV.LOCAL_MAVEN) {
 	uploadArchives {

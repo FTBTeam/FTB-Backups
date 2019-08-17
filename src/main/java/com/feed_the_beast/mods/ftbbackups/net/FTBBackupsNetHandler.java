@@ -5,6 +5,8 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
+import java.util.function.Predicate;
+
 public class FTBBackupsNetHandler
 {
 	public static SimpleChannel main;
@@ -12,10 +14,12 @@ public class FTBBackupsNetHandler
 
 	public static void init()
 	{
+		Predicate<String> validator = v -> MAIN_VERSION.equals(v) || NetworkRegistry.ABSENT.equals(v) || NetworkRegistry.ACCEPTVANILLA.equals(v);
+
 		main = NetworkRegistry.ChannelBuilder
 				.named(new ResourceLocation(FTBBackups.MOD_ID, "main"))
-				.clientAcceptedVersions(MAIN_VERSION::equals)
-				.serverAcceptedVersions(MAIN_VERSION::equals)
+				.clientAcceptedVersions(validator)
+				.serverAcceptedVersions(validator)
 				.networkProtocolVersion(() -> MAIN_VERSION)
 				.simpleChannel();
 
