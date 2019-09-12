@@ -50,6 +50,6 @@ public class CommandSize extends CommandBase
 
 		sender.sendMessage(FTBBackups.lang(sender, "ftbbackups.lang.size.1", BackupUtils.getSizeString(server.getWorld(0).getSaveHandler().getWorldDirectory())));
 		sender.sendMessage(FTBBackups.lang(sender, "ftbbackups.lang.size.2", BackupUtils.getSizeString(totalSize)));
-		sender.sendMessage(FTBBackups.lang(sender, "ftbbackups.lang.size.3", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.general.getMaxTotalSize(), Backups.INSTANCE.backupsFolder.getFreeSpace()))));
+		sender.sendMessage(FTBBackups.lang(sender, "ftbbackups.lang.size.3", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.general.getMaxTotalSize(), FTBBackupsConfig.general.getFolder().getFreeSpace()))));
 	}
 }

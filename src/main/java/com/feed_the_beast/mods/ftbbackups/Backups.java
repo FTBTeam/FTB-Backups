@@ -33,7 +33,6 @@ public enum Backups
 	INSTANCE;
 
 	public final List<Backup> backups = new ArrayList<>();
-	public File backupsFolder;
 	public long nextBackup = -1L;
 	public int doingBackup = 0;
 	public boolean printFiles = false;
@@ -45,16 +44,15 @@ public enum Backups
 
 	public void init()
 	{
-		File dataDir = FMLCommonHandler.instance().getMinecraftServerInstance().getDataDirectory();
-		backupsFolder = FTBBackupsConfig.general.folder.trim().isEmpty() ? new File(dataDir, "backups") : new File(FTBBackupsConfig.general.folder.trim());
+		FTBBackupsConfig.general.clearCachedFolder();
 		doingBackup = 0;
 		backups.clear();
 
-		File file = new File(dataDir, "local/ftbutilities/backups.json");
+		File file = new File(FMLCommonHandler.instance().getMinecraftServerInstance().getDataDirectory(), "local/ftbutilities/backups.json");
 
 		if (!file.exists())
 		{
-			File oldFile = new File(backupsFolder, "backups.json");
+			File oldFile = new File(FTBBackupsConfig.general.getFolder(), "backups.json");
 
 			if (oldFile.exists())
 			{
@@ -74,7 +72,7 @@ public enum Backups
 
 					if (!json.has("size"))
 					{
-						json.addProperty("size", BackupUtils.getSize(new File(backupsFolder, json.get("file").getAsString())));
+						json.addProperty("size", BackupUtils.getSize(new File(FTBBackupsConfig.general.getFolder(), json.get("file").getAsString())));
 					}
 
 					backups.add(new Backup(json));
@@ -86,7 +84,7 @@ public enum Backups
 			}
 		}
 
-		FTBBackups.LOGGER.info("Backups folder - " + backupsFolder.getAbsolutePath());
+		FTBBackups.LOGGER.info("Backups folder - " + FTBBackupsConfig.general.getFolder().getAbsolutePath());
 		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.general.time();
 	}
 
@@ -141,10 +139,12 @@ public enum Backups
 		{
 			ITextComponent component = function.apply(player);
 			component.getStyle().setColor(error ? TextFormatting.DARK_RED : TextFormatting.LIGHT_PURPLE);
-			player.sendStatusMessage(component, true);
+			player.sendMessage(component);
 		}
 
-		FTBBackups.LOGGER.info(function.apply(null).getUnformattedText());
+		ITextComponent component = function.apply(null);
+		component.getStyle().setColor(error ? TextFormatting.DARK_RED : TextFormatting.LIGHT_PURPLE);
+		server.sendMessage(component);
 	}
 
 	public boolean run(MinecraftServer server, ICommandSender sender, String customName)
@@ -305,7 +305,7 @@ public enum Backups
 
 				if (fileSize > 0L)
 				{
-					long freeSpace = Math.min(FTBBackupsConfig.general.getMaxTotalSize(), backupsFolder.getFreeSpace());
+					long freeSpace = Math.min(FTBBackupsConfig.general.getMaxTotalSize(), FTBBackupsConfig.general.getFolder().getFreeSpace());
 
 					while (totalSize + fileSize > freeSpace && !backups.isEmpty())
 					{
@@ -324,7 +324,7 @@ public enum Backups
 			if (FTBBackupsConfig.general.compression_level > 0)
 			{
 				out.append(".zip");
-				dstFile = BackupUtils.newFile(new File(backupsFolder, out.toString()));
+				dstFile = BackupUtils.newFile(new File(FTBBackupsConfig.general.getFolder(), out.toString()));
 
 				long start = System.currentTimeMillis();
 
@@ -368,7 +368,7 @@ public enum Backups
 			}
 			else
 			{
-				dstFile = new File(backupsFolder, out.toString());
+				dstFile = new File(FTBBackupsConfig.general.getFolder(), out.toString());
 				dstFile.mkdirs();
 
 				currentFile = 0;
@@ -420,7 +420,7 @@ public enum Backups
 
 		BackupUtils.toJson(new File(server.getDataDirectory(), "local/ftbutilities/backups.json"), array, true);
 
-		if (error == null && FTBBackupsConfig.general.silent)
+		if (error == null && !FTBBackupsConfig.general.silent)
 		{
 			String timeString = BackupUtils.getTimeString(System.currentTimeMillis() - time.getTimeInMillis());
 
@@ -451,7 +451,9 @@ public enum Backups
 		{
 			sb.append('0');
 		}
+
 		sb.append(num);
+
 		if (c != '\0')
 		{
 			sb.append(c);

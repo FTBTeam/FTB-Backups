@@ -57,7 +57,7 @@ public class Backup implements Comparable<Backup>
 
 	public File getFile()
 	{
-		return new File(Backups.INSTANCE.backupsFolder, fileId);
+		return new File(FTBBackupsConfig.general.getFolder(), fileId);
 	}
 
 	@Override

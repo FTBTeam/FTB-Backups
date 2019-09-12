@@ -3,8 +3,11 @@ package com.feed_the_beast.mods.ftbbackups;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
+import java.io.File;
 
 /**
  * @author LatvianModder
@@ -58,8 +61,13 @@ public class FTBBackupsConfig
 		@Config.Comment("Add extra files that will be placed in backup _extra_/ folder.")
 		public String[] extra_files = { };
 
-		@Config.Comment("Maximum total size that is allowed in backups folder. Older backups will be deleted to free space for newer ones.")
-		public String max_total_size = "50 GB";
+		@Config.Comment({
+				"Maximum total size that is allowed in backups folder. Older backups will be deleted to free space for newer ones.",
+				"You can use TB, GB, MB and KB for filesizes.",
+				"You can use % to set maximum total size based on your available disk space. It is still limited by max total backup count, so it's not gonna fill up large drives.",
+				"Valid inputs: 50 GB, 10 MB, 33%"
+		})
+		public String max_total_size = "75%";
 
 		@Config.Comment("Disables level saving while performing backup.")
 		public boolean disable_level_saving = true;
@@ -74,6 +82,9 @@ public class FTBBackupsConfig
 		@Config.RangeInt(min = 256, max = 65536)
 		public int buffer_size = 4096;
 
+		private long cachedMaxTotalSize = -1L;
+		private File cachedFolder;
+
 		public long time()
 		{
 			return (long) (backup_timer * 3600000L);
@@ -81,32 +92,63 @@ public class FTBBackupsConfig
 
 		public long getMaxTotalSize()
 		{
+			if (cachedMaxTotalSize == -1L)
+			{
+				cachedMaxTotalSize = getMaxTotalSize0();
+			}
+
+			return cachedMaxTotalSize;
+		}
+
+		private long getMaxTotalSize0()
+		{
 			String s = BackupUtils.removeAllWhitespace(max_total_size).toUpperCase();
 
-			if (s.endsWith("TB"))
+			if (s.endsWith("%"))
 			{
-				return Long.parseLong(s.substring(0, s.length() - 2)) * BackupUtils.TB;
+				return (long) (Double.parseDouble(s.substring(0, s.length() - 1).trim()) * 0.01D * getFolder().getTotalSpace());
+			}
+			else if (s.endsWith("TB"))
+			{
+				return Long.parseLong(s.substring(0, s.length() - 2).trim()) * BackupUtils.TB;
 			}
 			else if (s.endsWith("GB"))
 			{
-				return Long.parseLong(s.substring(0, s.length() - 2)) * BackupUtils.GB;
+				return Long.parseLong(s.substring(0, s.length() - 2).trim()) * BackupUtils.GB;
 			}
 			else if (s.endsWith("MB"))
 			{
-				return Long.parseLong(s.substring(0, s.length() - 2)) * BackupUtils.MB;
+				return Long.parseLong(s.substring(0, s.length() - 2).trim()) * BackupUtils.MB;
 			}
 			else if (s.endsWith("KB"))
 			{
-				return Long.parseLong(s.substring(0, s.length() - 2)) * BackupUtils.KB;
+				return Long.parseLong(s.substring(0, s.length() - 2).trim()) * BackupUtils.KB;
 			}
 
 			return Long.parseLong(s);
+		}
+
+		public File getFolder()
+		{
+			if (cachedFolder == null)
+			{
+				cachedFolder = FTBBackupsConfig.general.folder.trim().isEmpty() ? new File(FMLCommonHandler.instance().getMinecraftServerInstance().getDataDirectory(), "backups") : new File(FTBBackupsConfig.general.folder.trim());
+			}
+
+			return cachedFolder;
+		}
+
+		public void clearCachedFolder()
+		{
+			cachedFolder = null;
 		}
 	}
 
 	public static boolean sync()
 	{
 		ConfigManager.sync(FTBBackups.MOD_ID, Config.Type.INSTANCE);
+		general.cachedMaxTotalSize = -1L;
+		general.cachedFolder = null;
 		return true;
 	}
 
