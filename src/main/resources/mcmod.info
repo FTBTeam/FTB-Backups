@@ -1,11 +1,11 @@
 [
 	{
 		"modid": "ftbbackups",
-		"name": "FTB Utilities: Backups",
+		"name": "FTB Backups",
 		"description": "",
 		"version": "${version}",
 		"mcversion": "${mcversion}",
-		"url": "http://minecraft.curseforge.com/projects/ftb-utilities-backups",
+		"url": "https://www.curseforge.com/minecraft/mc-mods/ftb-backups",
 		"updateUrl": "",
 		"authorList": ["LatvianModder"],
 		"credits": "",

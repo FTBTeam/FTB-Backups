@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 public class FTBBackups
 {
 	public static final String MOD_ID = "ftbbackups";
-	public static final String MOD_NAME = "FTB Utilities Backups";
+	public static final String MOD_NAME = "FTB Backups";
 	public static final String VERSION = "0.0.0.ftbbackups";
 	public static final Logger LOGGER = LogManager.getLogger(MOD_NAME);
 
