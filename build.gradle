@@ -1,41 +1,43 @@
 buildscript {
 	repositories {
+		jcenter()
 		maven { url = 'https://files.minecraftforge.net/maven' }
 		maven { url "https://plugins.gradle.org/m2/" }
-		jcenter()
 		mavenCentral()
 	}
 	dependencies {
 		classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
-		classpath 'gradle.plugin.com.matthewprenger:CurseGradle:1.1.0'
 	}
 }
-
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
-apply plugin: 'com.matthewprenger.cursegradle'
 
 apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/master/generic/markdown-git-changelog.gradle'
 
 def ENV = System.getenv()
 version = ENV.BUILD_NUMBER ? "${mod_version}.${ENV.BUILD_NUMBER}" : "${mod_version}.custom"
-group = package_group
-archivesBaseName = mod_name
+group = project.mod_package
+archivesBaseName = project.mod_name
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
 minecraft {
-	mappings channel: 'snapshot', version: project.mappings_version
-
+	mappings channel: 'snapshot', version: project.mapping_version
+	// accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 	runs {
 		client {
 			workingDirectory project.file('run')
-			property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+			//property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
 			property 'forge.logging.console.level', 'debug'
 
+			if (project.hasProperty('mc_dev_uuid')) args '--uuid', project.mc_dev_uuid
+			if (project.hasProperty('mc_dev_username')) args '--username', project.mc_dev_username
+			if (project.hasProperty('mc_dev_width')) args '--width', project.mc_dev_width
+			if (project.hasProperty('mc_dev_height')) args '--height', project.mc_dev_height
+
 			mods {
-				ftbbackups {
+				kubejs {
 					source sourceSets.main
 				}
 			}
@@ -43,11 +45,13 @@ minecraft {
 
 		server {
 			workingDirectory project.file('run')
-			property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+			//property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
 			property 'forge.logging.console.level', 'debug'
 
+			args 'nogui'
+
 			mods {
-				ftbbackups {
+				kubejs {
 					source sourceSets.main
 				}
 			}
@@ -55,13 +59,13 @@ minecraft {
 
 		data {
 			workingDirectory project.file('run')
-			property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+			//property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
 			property 'forge.logging.console.level', 'debug'
 
-			args '--mod', 'hcmc', '--all', '--output', file('src/generated/resources/')
+			args '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/')
 
 			mods {
-				ftbbackups {
+				kubejs {
 					source sourceSets.main
 				}
 			}
@@ -70,18 +74,18 @@ minecraft {
 }
 
 dependencies {
-	minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
+	minecraft "net.minecraftforge:forge:${forge_version}"
 }
 
 jar {
 	manifest {
 		attributes([
-				"Specification-Title"     : "ftbbackups",
-				"Specification-Vendor"    : "LatvianModder",
-				"Specification-Version"   : "1", // We are version 1 of ourselves
+				"Specification-Title"     : project.mod_id,
+				"Specification-Vendor"    : project.mod_author,
+				"Specification-Version"   : "1",
 				"Implementation-Title"    : project.name,
-				"Implementation-Version"  : project.version,
-				"Implementation-Vendor"   : "LatvianModder",
+				"Implementation-Version"  : version,
+				"Implementation-Vendor"   : project.mod_author,
 				"Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 		])
 	}
@@ -99,20 +103,6 @@ if (ENV.LOCAL_MAVEN) {
 			mavenDeployer {
 				repository(url: "file://${ENV.LOCAL_MAVEN}")
 			}
-		}
-	}
-}
-
-if (ENV.CURSEFORGE_KEY) {
-	curseforge {
-		apiKey = ENV.CURSEFORGE_KEY
-		project {
-			id = project.curseforge_id
-			releaseType = "release"
-			addGameVersion project.mc_version
-			changelog = getGitChangelog
-			changelogType = 'markdown'
-			//addArtifact(sourceJar)
 		}
 	}
 }

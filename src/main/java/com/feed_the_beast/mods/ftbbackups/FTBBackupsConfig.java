@@ -25,7 +25,6 @@ public class FTBBackupsConfig
 	public static long maxTotalSize;
 	public static boolean onlyIfPlayersOnline;
 	public static boolean forceOnShutdown;
-	public static boolean disableLevelSaving;
 	public static int bufferSize;
 
 	private static Pair<CommonConfig, ForgeConfigSpec> common;
@@ -87,7 +86,6 @@ public class FTBBackupsConfig
 
 		onlyIfPlayersOnline = cfg.onlyIfPlayersOnline.get();
 		forceOnShutdown = cfg.forceOnShutdown.get();
-		disableLevelSaving = cfg.disableLevelSaving.get();
 		bufferSize = cfg.bufferSize.get();
 	}
 
@@ -104,7 +102,6 @@ public class FTBBackupsConfig
 		private final ForgeConfigSpec.ConfigValue<String> maxTotalSize;
 		private final ForgeConfigSpec.BooleanValue onlyIfPlayersOnline;
 		private final ForgeConfigSpec.BooleanValue forceOnShutdown;
-		private final ForgeConfigSpec.BooleanValue disableLevelSaving;
 		private final ForgeConfigSpec.IntValue bufferSize;
 
 		private CommonConfig(ForgeConfigSpec.Builder builder)
@@ -179,11 +176,6 @@ public class FTBBackupsConfig
 					.define("force_on_shutdown", false);
 
 			builder.comment("Advanced features that shouldn't be changed unless you know what you are doing.").push("advanced");
-
-			disableLevelSaving = builder
-					.comment("Disables level saving while performing backup.")
-					.translation("ftbbackups.general.disable_level_saving")
-					.define("disable_level_saving", true);
 
 			bufferSize = builder
 					.comment("Buffer size for writing files.")

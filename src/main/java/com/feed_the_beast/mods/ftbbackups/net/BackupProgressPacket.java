@@ -9,17 +9,17 @@ import java.util.function.Supplier;
 /**
  * @author LatvianModder
  */
-public class BackupProgressMessage
+public class BackupProgressPacket
 {
 	private int current, total;
 
-	public BackupProgressMessage(int c, int t)
+	public BackupProgressPacket(int c, int t)
 	{
 		current = c;
 		total = t;
 	}
 
-	public BackupProgressMessage(PacketBuffer buf)
+	public BackupProgressPacket(PacketBuffer buf)
 	{
 		total = buf.readVarInt();
 		current = buf.readVarInt();
@@ -34,5 +34,6 @@ public class BackupProgressMessage
 	public void handle(Supplier<NetworkEvent.Context> context)
 	{
 		context.get().enqueueWork(() -> FTBBackupsClient.setFiles(current, total));
+		context.get().setPacketHandled(true);
 	}
 }

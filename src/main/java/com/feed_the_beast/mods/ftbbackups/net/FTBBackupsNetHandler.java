@@ -9,20 +9,20 @@ import java.util.function.Predicate;
 
 public class FTBBackupsNetHandler
 {
-	public static SimpleChannel main;
+	public static SimpleChannel MAIN;
 	private static final String MAIN_VERSION = "1";
 
 	public static void init()
 	{
 		Predicate<String> validator = v -> MAIN_VERSION.equals(v) || NetworkRegistry.ABSENT.equals(v) || NetworkRegistry.ACCEPTVANILLA.equals(v);
 
-		main = NetworkRegistry.ChannelBuilder
+		MAIN = NetworkRegistry.ChannelBuilder
 				.named(new ResourceLocation(FTBBackups.MOD_ID, "main"))
 				.clientAcceptedVersions(validator)
 				.serverAcceptedVersions(validator)
 				.networkProtocolVersion(() -> MAIN_VERSION)
 				.simpleChannel();
 
-		main.registerMessage(1, BackupProgressMessage.class, BackupProgressMessage::write, BackupProgressMessage::new, BackupProgressMessage::handle);
+		MAIN.registerMessage(1, BackupProgressPacket.class, BackupProgressPacket::write, BackupProgressPacket::new, BackupProgressPacket::handle);
 	}
 }

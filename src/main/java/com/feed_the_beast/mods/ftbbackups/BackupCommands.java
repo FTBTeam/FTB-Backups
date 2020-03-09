@@ -2,7 +2,7 @@ package com.feed_the_beast.mods.ftbbackups;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -15,9 +15,8 @@ public class BackupCommands
 {
 	public static void register(CommandDispatcher<CommandSource> dispatcher)
 	{
-		dispatcher.register(LiteralArgumentBuilder.<CommandSource>literal("backup")
+		LiteralCommandNode<CommandSource> cmd = dispatcher.register(Commands.literal("ftbackups")
 				.then(Commands.literal("time")
-						.requires(cs -> cs.getServer().isSinglePlayer() || cs.hasPermissionLevel(0))
 						.executes(ctx -> time(ctx.getSource()))
 				)
 				.then(Commands.literal("start")
@@ -32,6 +31,8 @@ public class BackupCommands
 						.executes(ctx -> size(ctx.getSource()))
 				)
 		);
+
+		dispatcher.register(Commands.literal("backup").redirect(cmd));
 	}
 
 	private static int time(CommandSource source)

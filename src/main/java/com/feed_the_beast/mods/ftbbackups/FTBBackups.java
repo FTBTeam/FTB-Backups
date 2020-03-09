@@ -1,6 +1,6 @@
 package com.feed_the_beast.mods.ftbbackups;
 
-import com.feed_the_beast.mods.ftbbackups.net.BackupProgressMessage;
+import com.feed_the_beast.mods.ftbbackups.net.BackupProgressPacket;
 import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
@@ -17,7 +17,7 @@ import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.network.NetworkDirection;
+import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,38 +29,38 @@ public class FTBBackups
 
 	public FTBBackups()
 	{
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::loadCommon);
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::loadClient);
+		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::clientSetup);
 		FTBBackupsConfig.register();
 	}
 
-	private void loadCommon(FMLCommonSetupEvent event)
+	private void setup(FMLCommonSetupEvent event)
 	{
-		MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
-		MinecraftForge.EVENT_BUS.addListener(this::onServerStarted);
-		MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
-		MinecraftForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
-		MinecraftForge.EVENT_BUS.addListener(this::onPlayerLoggedOut);
-		MinecraftForge.EVENT_BUS.addListener(this::onServerTick);
+		MinecraftForge.EVENT_BUS.addListener(this::serverAboutToStart);
+		MinecraftForge.EVENT_BUS.addListener(this::serverStarting);
+		MinecraftForge.EVENT_BUS.addListener(this::serverStopping);
+		MinecraftForge.EVENT_BUS.addListener(this::playerLoggedIn);
+		MinecraftForge.EVENT_BUS.addListener(this::playerLoggedOut);
+		MinecraftForge.EVENT_BUS.addListener(this::serverTick);
 		FTBBackupsNetHandler.init();
 	}
 
-	private void loadClient(FMLClientSetupEvent event)
+	private void clientSetup(FMLClientSetupEvent event)
 	{
-		FTBBackupsClient.init(event);
+		FTBBackupsClient.init();
 	}
 
-	private void onServerStarting(FMLServerStartingEvent event)
-	{
-		BackupCommands.register(event.getCommandDispatcher());
-	}
-
-	private void onServerStarted(FMLServerStartedEvent event)
+	private void serverAboutToStart(FMLServerStartedEvent event)
 	{
 		Backups.INSTANCE.init(event.getServer());
 	}
 
-	private void onServerStopping(FMLServerStoppingEvent event)
+	private void serverStarting(FMLServerStartingEvent event)
+	{
+		BackupCommands.register(event.getCommandDispatcher());
+	}
+
+	private void serverStopping(FMLServerStoppingEvent event)
 	{
 		if (FTBBackupsConfig.forceOnShutdown)
 		{
@@ -68,20 +68,23 @@ public class FTBBackups
 		}
 	}
 
-	private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
+	private void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
 	{
 		if (event.getPlayer() instanceof ServerPlayerEntity)
 		{
-			FTBBackupsNetHandler.main.sendTo(new BackupProgressMessage(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles), ((ServerPlayerEntity) event.getPlayer()).connection.getNetworkManager(), NetworkDirection.PLAY_TO_CLIENT);
+			FTBBackupsNetHandler.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) event.getPlayer()), new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles));
 		}
 	}
 
-	private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event)
+	private void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event)
 	{
-		Backups.INSTANCE.hadPlayersOnline = true;
+		if (event.getPlayer() instanceof ServerPlayerEntity)
+		{
+			Backups.INSTANCE.hadPlayersOnline = true;
+		}
 	}
 
-	private void onServerTick(TickEvent.ServerTickEvent event)
+	private void serverTick(TickEvent.ServerTickEvent event)
 	{
 		if (event.phase != TickEvent.Phase.START)
 		{

@@ -1,6 +1,6 @@
 package com.feed_the_beast.mods.ftbbackups;
 
-import com.feed_the_beast.mods.ftbbackups.net.BackupProgressMessage;
+import com.feed_the_beast.mods.ftbbackups.net.BackupProgressPacket;
 import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -36,7 +36,7 @@ public enum Backups
 	public final List<Backup> backups = new ArrayList<>();
 	public File backupsFolder;
 	public long nextBackup = -1L;
-	public int doingBackup = 0;
+	public BackupStatus doingBackup = BackupStatus.NONE;
 	public boolean printFiles = false;
 
 	public int currentFile = 0;
@@ -48,7 +48,7 @@ public enum Backups
 	{
 		File dataDir = server.getDataDirectory();
 		backupsFolder = FTBBackupsConfig.folder.trim().isEmpty() ? new File(dataDir, "backups") : new File(FTBBackupsConfig.folder.trim());
-		doingBackup = 0;
+		doingBackup = BackupStatus.NONE;
 		backups.clear();
 
 		File file = new File(dataDir, "local/ftbutilities/backups.json");
@@ -102,27 +102,24 @@ public enum Backups
 			}
 		}
 
-		if (doingBackup > 1)
+		if (doingBackup.isDone())
 		{
-			doingBackup = 0;
+			doingBackup = BackupStatus.NONE;
 
-			if (FTBBackupsConfig.disableLevelSaving)
+			for (ServerWorld world : server.getWorlds())
 			{
-				for (ServerWorld world : server.getWorlds())
+				if (world != null)
 				{
-					if (world != null)
-					{
-						world.disableLevelSaving = false;
-					}
+					world.disableLevelSaving = false;
 				}
 			}
 
 			if (!FTBBackupsConfig.silent)
 			{
-				FTBBackupsNetHandler.main.send(PacketDistributor.ALL.noArg(), new BackupProgressMessage(0, 0));
+				FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(0, 0));
 			}
 		}
-		else if (doingBackup > 0 && printFiles)
+		else if (doingBackup.isRunning() && printFiles)
 		{
 			if (currentFile == 0 || currentFile == totalFiles - 1)
 			{
@@ -131,7 +128,7 @@ public enum Backups
 
 			if (!FTBBackupsConfig.silent)
 			{
-				FTBBackupsNetHandler.main.send(PacketDistributor.ALL.noArg(), new BackupProgressMessage(currentFile, totalFiles));
+				FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(currentFile, totalFiles));
 			}
 		}
 	}
@@ -146,7 +143,7 @@ public enum Backups
 
 	public boolean run(MinecraftServer server, boolean auto, ITextComponent name, String customName)
 	{
-		if (doingBackup != 0)
+		if (doingBackup.isRunningOrDone())
 		{
 			return false;
 		}
@@ -159,54 +156,43 @@ public enum Backups
 		notifyAll(server, new TranslationTextComponent("ftbbackups.lang.start", name), false);
 		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
 
-		if (FTBBackupsConfig.disableLevelSaving)
+		for (ServerWorld world : server.getWorlds())
 		{
-			for (ServerWorld world : server.getWorlds())
+			if (world != null)
 			{
-				if (world != null)
+				world.disableLevelSaving = true;
+			}
+		}
+
+		doingBackup = BackupStatus.RUNNING;
+		server.getPlayerList().saveAllPlayerData();
+
+		new Thread(() -> {
+			try
+			{
+				try
 				{
-					world.disableLevelSaving = true;
+					createBackup(server, customName);
+				}
+				catch (Exception ex)
+				{
+					ex.printStackTrace();
+					notifyAll(server, new TranslationTextComponent("ftbbackups.lang.saving_failed"), true);
 				}
 			}
-		}
-
-		doingBackup = 1;
-
-		try
-		{
-			server.getPlayerList().saveAllPlayerData();
-
-			if (server.save(true, true, true))
-			{
-				//ThreadedFileIOBase.getThreadedIOInstance().queueIO(() ->
-				new Thread(() -> {
-					try
-					{
-						doBackup(server, customName);
-					}
-					catch (Exception ex)
-					{
-						ex.printStackTrace();
-					}
-
-					doingBackup = 2;
-				}).start();
-			}
-			else
+			catch (Exception ex)
 			{
 				notifyAll(server, new TranslationTextComponent("ftbbackups.lang.saving_failed"), true);
+				ex.printStackTrace();
 			}
-		}
-		catch (Exception ex)
-		{
-			notifyAll(server, new TranslationTextComponent("ftbbackups.lang.saving_failed"), true);
-			ex.printStackTrace();
-		}
+
+			doingBackup = BackupStatus.DONE;
+		}).start();
 
 		return true;
 	}
 
-	private void doBackup(MinecraftServer server, String customName)
+	private void createBackup(MinecraftServer server, String customName)
 	{
 		File src = server.getWorld(DimensionType.OVERWORLD).getSaveHandler().getWorldDirectory();
 

@@ -5,19 +5,14 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-
-import java.util.function.Supplier;
 
 public class FTBBackupsClient
 {
-	private static Supplier<Minecraft> minecraftSupplier;
 	private static int currentBackupFile = 0;
 	private static int totalBackupFiles = 0;
 
-	public static void init(FMLClientSetupEvent event)
+	public static void init()
 	{
-		minecraftSupplier = event.getMinecraftSupplier();
 		//MinecraftForge.EVENT_BUS.addListener(FTBBackupsClient::onClientDisconnected);
 		MinecraftForge.EVENT_BUS.addListener(FTBBackupsClient::onDebugInfoEvent);
 	}
@@ -36,7 +31,7 @@ public class FTBBackupsClient
 
 	private static void onDebugInfoEvent(RenderGameOverlayEvent.Text event)
 	{
-		if (minecraftSupplier.get().gameSettings.showDebugInfo)
+		if (Minecraft.getInstance().gameSettings.showDebugInfo)
 		{
 			return;
 		}
