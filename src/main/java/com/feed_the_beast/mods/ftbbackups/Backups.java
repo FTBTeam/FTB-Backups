@@ -207,6 +207,14 @@ public enum Backups
 	{
 		File src = server.func_240776_a_(FolderName.field_237253_i_).toFile();
 
+		try
+		{
+			src = src.getCanonicalFile();
+		}
+		catch (Exception ex)
+		{
+		}
+
 		Calendar time = Calendar.getInstance();
 		File dstFile;
 		boolean success = false;
