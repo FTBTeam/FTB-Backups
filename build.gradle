@@ -118,7 +118,6 @@ if (ENV.CURSEFORGE_KEY) {
 			addGameVersion '1.16.1'
 			changelog = getGitChangelog
 			changelogType = 'markdown'
-			addArtifact(sourceJar)
 		}
 	}
 }
