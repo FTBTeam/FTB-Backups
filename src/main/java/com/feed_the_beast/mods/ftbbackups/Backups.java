@@ -5,16 +5,18 @@ import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.network.play.server.SChatPacket;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
+import net.minecraft.util.text.Color;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.network.PacketDistributor;
 
 import java.io.File;
@@ -47,7 +49,16 @@ public enum Backups
 	public void init(MinecraftServer server)
 	{
 		File dataDir = server.getDataDirectory();
-		backupsFolder = FTBBackupsConfig.folder.trim().isEmpty() ? new File(dataDir, "backups") : new File(FTBBackupsConfig.folder.trim());
+		backupsFolder = FTBBackupsConfig.folder.trim().isEmpty() ? FMLPaths.GAMEDIR.get().resolve("backups").toFile() : new File(FTBBackupsConfig.folder);
+
+		try
+		{
+			backupsFolder = backupsFolder.getCanonicalFile();
+		}
+		catch (Exception ex)
+		{
+		}
+
 		doingBackup = BackupStatus.NONE;
 		backups.clear();
 
@@ -136,9 +147,9 @@ public enum Backups
 	public void notifyAll(MinecraftServer server, ITextComponent component, boolean error)
 	{
 		component = component.deepCopy();
-		component.getStyle().setColor(error ? TextFormatting.DARK_RED : TextFormatting.LIGHT_PURPLE);
+		component.getStyle().setColor(Color.func_240744_a_(error ? TextFormatting.DARK_RED : TextFormatting.LIGHT_PURPLE));
 		FTBBackups.LOGGER.info(component.getString());
-		server.getPlayerList().sendPacketToAllPlayers(new SChatPacket(component, ChatType.GAME_INFO));
+		server.getPlayerList().func_232641_a_(component, ChatType.GAME_INFO, Util.DUMMY_UUID);
 	}
 
 	public boolean run(MinecraftServer server, boolean auto, ITextComponent name, String customName)
@@ -194,7 +205,7 @@ public enum Backups
 
 	private void createBackup(MinecraftServer server, String customName)
 	{
-		File src = server.getWorld(DimensionType.OVERWORLD).getSaveHandler().getWorldDirectory();
+		File src = server.func_240776_a_(FolderName.field_237253_i_).toFile();
 
 		Calendar time = Calendar.getInstance();
 		File dstFile;
@@ -246,6 +257,11 @@ public enum Backups
 
 			for (File file : BackupUtils.listTree(src))
 			{
+				if (file.getName().equals("session.lock") || !file.canRead())
+				{
+					continue;
+				}
+
 				String filePath = file.getAbsolutePath();
 				fileMap.put(file, src.getName() + File.separator + filePath.substring(src.getAbsolutePath().length() + 1));
 			}
@@ -331,7 +347,7 @@ public enum Backups
 					}
 					catch (Exception ex)
 					{
-						ex.printStackTrace();
+						FTBBackups.LOGGER.error("Failed to read file " + entry.getValue() + ": " + ex);
 					}
 
 					currentFile++;
@@ -358,7 +374,7 @@ public enum Backups
 					}
 					catch (Exception ex)
 					{
-						ex.printStackTrace();
+						FTBBackups.LOGGER.error("Failed to copy file " + entry.getValue() + ": " + ex);
 					}
 
 					currentFile++;
@@ -419,8 +435,8 @@ public enum Backups
 				component = new TranslationTextComponent("ftbbackups.lang.end_1", timeString);
 			}
 
-			component.getStyle().setColor(TextFormatting.LIGHT_PURPLE);
-			server.getPlayerList().sendMessage(component, false);
+			component.getStyle().setColor(Color.func_240744_a_(TextFormatting.LIGHT_PURPLE));
+			server.getPlayerList().func_232641_a_(component, ChatType.CHAT, Util.DUMMY_UUID);
 		}
 	}
 
