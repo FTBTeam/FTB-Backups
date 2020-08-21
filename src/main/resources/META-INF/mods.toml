@@ -1,27 +1,28 @@
-modLoader="javafml"
-loaderVersion="[27,)"
+modLoader = "javafml"
+loaderVersion = "[32,)"
+license = "All Rights Reserved"
 
 [[mods]]
-modId="ftbbackups"
-version="${file.jarVersion}"
-displayName="FTB Utilities: Backups"
-displayURL="https://www.curseforge.com/minecraft/mc-mods/ftb-utilities-backups"
-logoFile="logo.png"
-authors="LatvianModder"
-description='''
+modId = "ftbbackups"
+version = "${file.jarVersion}"
+displayName = "FTB Backups"
+displayURL = "https://www.curseforge.com/minecraft/mc-mods/ftb-backups"
+logoFile = "logo.png"
+authors = "LatvianModder"
+description = '''
 Creates backups of your world
 '''
 
 [[dependencies.ftbbackups]]
 modId="forge"
-mandatory=true
-versionRange="[28,)"
-ordering="NONE"
+mandatory = true
+versionRange = "[32,)"
+ordering = "NONE"
 side="BOTH"
 
 [[dependencies.ftbbackups]]
 modId="minecraft"
-mandatory=true
-versionRange="[1.14.4,)"
-ordering="NONE"
+mandatory = true
+versionRange = "[1.16,)"
+ordering = "NONE"
 side="BOTH"
