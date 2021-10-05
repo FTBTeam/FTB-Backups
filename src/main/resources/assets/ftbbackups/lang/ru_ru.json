@@ -1,9 +1,10 @@
 {
 	"_comment": "Config",
 	"ftbbackups.general": "Общее",
-	"ftbbackups.general.silent": "Тихий",
-	"ftbbackups.general.backups_to_keep": "Резервные копии для хранения",
-	"ftbbackups.general.backup_timer": "Таймер резервного копирования",
+	"ftbbackups.general.auto": "Автоматический режим",
+	"ftbbackups.general.silent": "Тихий режим",
+	"ftbbackups.general.backups_to_keep": "Количество резервных копий",
+	"ftbbackups.general.backup_timer": "Частота создания резервных копий",
 	"ftbbackups.general.compression_level": "Уровень сжатия",
 	"ftbbackups.general.folder": "Папка",
 	"ftbbackups.general.display_file_size": "Отображать размер файла",
