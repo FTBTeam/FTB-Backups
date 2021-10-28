@@ -1,8 +1,8 @@
 package com.feed_the_beast.mods.ftbbackups.net;
 
 import com.feed_the_beast.mods.ftbbackups.FTBBackupsClient;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
@@ -19,13 +19,13 @@ public class BackupProgressPacket
 		total = t;
 	}
 
-	public BackupProgressPacket(PacketBuffer buf)
+	public BackupProgressPacket(FriendlyByteBuf buf)
 	{
 		total = buf.readVarInt();
 		current = buf.readVarInt();
 	}
 
-	public void write(PacketBuffer buf)
+	public void write(FriendlyByteBuf buf)
 	{
 		buf.writeVarInt(total);
 		buf.writeVarInt(current);

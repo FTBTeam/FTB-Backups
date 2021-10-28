@@ -5,19 +5,15 @@ import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.network.chat.*;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.ChatType;
-import net.minecraft.util.text.Color;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.FolderName;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.fmllegacy.network.PacketDistributor;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,7 +44,7 @@ public enum Backups
 
 	public void init(MinecraftServer server)
 	{
-		File dataDir = server.getDataDirectory();
+		File dataDir = server.getServerDirectory();
 		backupsFolder = FTBBackupsConfig.folder.trim().isEmpty() ? FMLPaths.GAMEDIR.get().resolve("backups").toFile() : new File(FTBBackupsConfig.folder);
 
 		try
@@ -109,7 +105,7 @@ public enum Backups
 			if (!FTBBackupsConfig.onlyIfPlayersOnline || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty())
 			{
 				hadPlayersOnline = false;
-				run(server, true, new StringTextComponent("Server"), "");
+				run(server, true, new TextComponent("Server"), "");
 			}
 		}
 
@@ -117,11 +113,11 @@ public enum Backups
 		{
 			doingBackup = BackupStatus.NONE;
 
-			for (ServerWorld world : server.getWorlds())
+			for (ServerLevel world : server.getAllLevels())
 			{
 				if (world != null)
 				{
-					world.disableLevelSaving = false;
+					world.noSave = false;
 				}
 			}
 
@@ -144,15 +140,15 @@ public enum Backups
 		}
 	}
 
-	public void notifyAll(MinecraftServer server, ITextComponent component, boolean error)
+	public void notifyAll(MinecraftServer server, Component component, boolean error)
 	{
-		component = component.deepCopy();
-		component.getStyle().setColor(Color.func_240744_a_(error ? TextFormatting.DARK_RED : TextFormatting.LIGHT_PURPLE));
+		component = component.plainCopy();
+		component.getStyle().withColor(TextColor.fromLegacyFormat(error ? ChatFormatting.DARK_RED : ChatFormatting.LIGHT_PURPLE));
 		FTBBackups.LOGGER.info(component.getString());
-		server.getPlayerList().func_232641_a_(component, ChatType.GAME_INFO, Util.DUMMY_UUID);
+		server.getPlayerList().broadcastMessage(component, ChatType.GAME_INFO, Util.NIL_UUID);
 	}
 
-	public boolean run(MinecraftServer server, boolean auto, ITextComponent name, String customName)
+	public boolean run(MinecraftServer server, boolean auto, Component name, String customName)
 	{
 		if (doingBackup.isRunningOrDone())
 		{
@@ -164,19 +160,19 @@ public enum Backups
 			return false;
 		}
 
-		notifyAll(server, new TranslationTextComponent("ftbbackups.lang.start", name), false);
+		notifyAll(server, new TranslatableComponent("ftbbackups.lang.start", name), false);
 		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
 
-		for (ServerWorld world : server.getWorlds())
+		for (ServerLevel world : server.getAllLevels())
 		{
 			if (world != null)
 			{
-				world.disableLevelSaving = true;
+				world.noSave = true;
 			}
 		}
 
 		doingBackup = BackupStatus.RUNNING;
-		server.getPlayerList().saveAllPlayerData();
+		server.getPlayerList().saveAll();
 
 		new Thread(() -> {
 			try
@@ -188,12 +184,12 @@ public enum Backups
 				catch (Exception ex)
 				{
 					ex.printStackTrace();
-					notifyAll(server, new TranslationTextComponent("ftbbackups.lang.saving_failed"), true);
+					notifyAll(server, new TranslatableComponent("ftbbackups.lang.saving_failed"), true);
 				}
 			}
 			catch (Exception ex)
 			{
-				notifyAll(server, new TranslationTextComponent("ftbbackups.lang.saving_failed"), true);
+				notifyAll(server, new TranslatableComponent("ftbbackups.lang.saving_failed"), true);
 				ex.printStackTrace();
 			}
 
@@ -205,7 +201,7 @@ public enum Backups
 
 	private void createBackup(MinecraftServer server, String customName)
 	{
-		File src = server.func_240776_a_(FolderName.field_237253_i_).toFile();
+		File src = server.getWorldPath(LevelResource.ROOT).toFile();
 
 		try
 		{
@@ -240,7 +236,7 @@ public enum Backups
 		try
 		{
 			LinkedHashMap<File, String> fileMap = new LinkedHashMap<>();
-			String mcdir = server.getDataDirectory().getCanonicalFile().getAbsolutePath();
+			String mcdir = server.getServerDirectory().getCanonicalFile().getAbsolutePath();
 
 			Consumer<File> consumer = file0 -> {
 				for (File file : BackupUtils.listTree(file0))
@@ -397,7 +393,7 @@ public enum Backups
 			if (!FTBBackupsConfig.silent)
 			{
 				String errorName = ex.getClass().getName();
-				notifyAll(server, new TranslationTextComponent("ftbbackups.lang.fail", errorName), true);
+				notifyAll(server, new TranslatableComponent("ftbbackups.lang.fail", errorName), true);
 			}
 
 			ex.printStackTrace();
@@ -417,12 +413,12 @@ public enum Backups
 			array.add(backup1.toJsonObject());
 		}
 
-		BackupUtils.toJson(new File(server.getDataDirectory(), "local/ftbutilities/backups.json"), array, true);
+		BackupUtils.toJson(new File(server.getServerDirectory(), "local/ftbutilities/backups.json"), array, true);
 
 		if (error == null && !FTBBackupsConfig.silent)
 		{
 			String timeString = BackupUtils.getTimeString(System.currentTimeMillis() - time.getTimeInMillis());
-			ITextComponent component;
+			Component component;
 
 			if (FTBBackupsConfig.displayFileSize)
 			{
@@ -436,15 +432,15 @@ public enum Backups
 				String sizeB = BackupUtils.getSizeString(fileSize);
 				String sizeT = BackupUtils.getSizeString(totalSize);
 				String sizeString = sizeB.equals(sizeT) ? sizeB : (sizeB + " | " + sizeT);
-				component = new TranslationTextComponent("ftbbackups.lang.end_2", timeString, sizeString);
+				component = new TranslatableComponent("ftbbackups.lang.end_2", timeString, sizeString);
 			}
 			else
 			{
-				component = new TranslationTextComponent("ftbbackups.lang.end_1", timeString);
+				component = new TranslatableComponent("ftbbackups.lang.end_1", timeString);
 			}
 
-			component.getStyle().setColor(Color.func_240744_a_(TextFormatting.LIGHT_PURPLE));
-			server.getPlayerList().func_232641_a_(component, ChatType.CHAT, Util.DUMMY_UUID);
+			component.getStyle().withColor(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE));
+			server.getPlayerList().broadcastMessage(component, ChatType.CHAT, Util.NIL_UUID);
 		}
 	}
 

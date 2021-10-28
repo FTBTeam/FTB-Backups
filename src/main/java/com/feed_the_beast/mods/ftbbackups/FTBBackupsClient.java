@@ -1,8 +1,8 @@
 package com.feed_the_beast.mods.ftbbackups;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -31,14 +31,14 @@ public class FTBBackupsClient
 
 	private static void onDebugInfoEvent(RenderGameOverlayEvent.Text event)
 	{
-		if (Minecraft.getInstance().gameSettings.showDebugInfo)
+		if (Minecraft.getInstance().options.renderDebug)
 		{
 			return;
 		}
 
 		if (totalBackupFiles > 0 && totalBackupFiles > currentBackupFile)
 		{
-			event.getLeft().add(TextFormatting.LIGHT_PURPLE + I18n.format("ftbbackups.lang.timer_progress", currentBackupFile * 100 / totalBackupFiles, currentBackupFile, totalBackupFiles));
+			event.getLeft().add(ChatFormatting.LIGHT_PURPLE + I18n.get("ftbbackups.lang.timer_progress", currentBackupFile * 100 / totalBackupFiles, currentBackupFile, totalBackupFiles));
 		}
 	}
 }

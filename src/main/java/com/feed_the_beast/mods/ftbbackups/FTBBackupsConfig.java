@@ -3,6 +3,7 @@ package com.feed_the_beast.mods.ftbbackups;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -39,7 +40,7 @@ public class FTBBackupsConfig
 		modLoadingContext.registerConfig(ModConfig.Type.COMMON, common.getRight());
 	}
 
-	public static void reload(ModConfig.ModConfigEvent event)
+	public static void reload(ModConfigEvent event)
 	{
 		ModConfig config = event.getConfig();
 

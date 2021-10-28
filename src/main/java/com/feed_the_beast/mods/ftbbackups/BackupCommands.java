@@ -2,62 +2,62 @@ package com.feed_the_beast.mods.ftbbackups;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.storage.FolderName;
+import net.minecraft.Util;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.storage.LevelResource;
 
 /**
  * @author LatvianModder
  */
 public class BackupCommands
 {
-	public static void register(CommandDispatcher<CommandSource> dispatcher)
+	public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
 	{
 		dispatcher.register(Commands.literal("ftbbackups")
 				.then(Commands.literal("time")
 						.executes(ctx -> time(ctx.getSource()))
 				)
 				.then(Commands.literal("start")
-						.requires(cs -> cs.getServer().isSinglePlayer() || cs.hasPermissionLevel(3))
+						.requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
 						.then(Commands.argument("name", StringArgumentType.word())
 								.executes(ctx -> start(ctx.getSource(), StringArgumentType.getString(ctx, "name")))
 						)
 						.executes(ctx -> start(ctx.getSource(), ""))
 				)
 				.then(Commands.literal("size")
-						.requires(cs -> cs.getServer().isSinglePlayer() || cs.hasPermissionLevel(3))
+						.requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
 						.executes(ctx -> size(ctx.getSource()))
 				)
 		);
 	}
 
-	private static int time(CommandSource source)
+	private static int time(CommandSourceStack source)
 	{
-		source.sendFeedback(new TranslationTextComponent("ftbbackups.lang.timer", BackupUtils.getTimeString(Backups.INSTANCE.nextBackup - System.currentTimeMillis())), true);
+		source.sendSuccess(new TranslatableComponent("ftbbackups.lang.timer", BackupUtils.getTimeString(Backups.INSTANCE.nextBackup - System.currentTimeMillis())), true);
 		return 1;
 	}
 
-	private static int start(CommandSource source, String customName)
+	private static int start(CommandSourceStack source, String customName)
 	{
 		if (Backups.INSTANCE.run(source.getServer(), false, source.getDisplayName(), customName))
 		{
-			for (ServerPlayerEntity player : source.getServer().getPlayerList().getPlayers())
+			for (ServerPlayer player : source.getServer().getPlayerList().getPlayers())
 			{
-				player.sendMessage(new TranslationTextComponent("ftbbackups.lang.manual_launch", source.getDisplayName()), Util.DUMMY_UUID);
+				player.sendMessage(new TranslatableComponent("ftbbackups.lang.manual_launch", source.getDisplayName()), Util.NIL_UUID);
 			}
 		}
 		else
 		{
-			source.sendFeedback(new TranslationTextComponent("ftbbackups.lang.already_running"), true);
+			source.sendSuccess(new TranslatableComponent("ftbbackups.lang.already_running"), true);
 		}
 
 		return 1;
 	}
 
-	private static int size(CommandSource source)
+	private static int size(CommandSourceStack source)
 	{
 		long totalSize = 0L;
 
@@ -66,9 +66,9 @@ public class BackupCommands
 			totalSize += backup.size;
 		}
 
-		source.sendFeedback(new TranslationTextComponent("ftbbackups.lang.size.current", BackupUtils.getSizeString(source.getServer().func_240776_a_(FolderName.field_237253_i_).toFile())), true);
-		source.sendFeedback(new TranslationTextComponent("ftbbackups.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
-		source.sendFeedback(new TranslationTextComponent("ftbbackups.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.maxTotalSize, Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
+		source.sendSuccess(new TranslatableComponent("ftbbackups.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
+		source.sendSuccess(new TranslatableComponent("ftbbackups.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
+		source.sendSuccess(new TranslatableComponent("ftbbackups.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.maxTotalSize, Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
 
 		return 1;
 	}
