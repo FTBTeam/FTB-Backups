@@ -2,8 +2,8 @@ package com.feed_the_beast.mods.ftbbackups.net;
 
 import com.feed_the_beast.mods.ftbbackups.FTBBackups;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fmllegacy.network.NetworkRegistry;
-import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
 
 import java.util.function.Predicate;
 

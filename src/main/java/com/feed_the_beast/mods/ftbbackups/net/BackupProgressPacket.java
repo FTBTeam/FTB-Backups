@@ -2,7 +2,7 @@ package com.feed_the_beast.mods.ftbbackups.net;
 
 import com.feed_the_beast.mods.ftbbackups.FTBBackupsClient;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
