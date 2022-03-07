@@ -9,7 +9,7 @@
 	"ftbbackups.general.folder": "Dossier",
 	"ftbbackups.general.display_file_size": "Afficher taille du fichier",
 	"ftbbackups.general.use_separate_thread": "Utiliser un thread séparé",
-	"ftbbackups.general.extra_files": "Fichier supplémentaires",
+	"ftbbackups.general.extra_files": "Fichiers supplémentaires",
 	"ftbbackups.general.max_total_size": "Taille totale maximale",
 	"ftbbackups.general.disable_level_saving": "Désactiver la sauvegarde du monde",
 	"ftbbackups.general.only_if_players_online": "Sauvegarder uniquement si des joueurs sont connectés",
