@@ -3,28 +3,22 @@ package com.feed_the_beast.mods.ftbbackups;
 import com.feed_the_beast.mods.ftbbackups.net.BackupProgressPacket;
 import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
-import net.minecraftforge.common.util.LogicalSidedProvider;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.IExtensionPoint;
-import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkConstants;
 import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Optional;
 
 @Mod(FTBBackups.MOD_ID)
 @Mod.EventBusSubscriber(modid = FTBBackups.MOD_ID)
@@ -86,13 +80,9 @@ public class FTBBackups
 	}
 
 	@SubscribeEvent
-	public static void serverTick(TickEvent.ServerTickEvent event)
-	{
-		if (event.phase != TickEvent.Phase.START)
-		{
-			LogicalSidedProvider.CLIENTWORLD.get(LogicalSide.SERVER).ifPresent(
-					level -> Backups.INSTANCE.tick(level.getServer(), System.currentTimeMillis())
-			);
+	public static void worldTick(TickEvent.WorldTickEvent event) {
+		if (event.phase != TickEvent.Phase.START && !event.world.isClientSide()) {
+			Backups.INSTANCE.tick(event.world.getServer(), System.currentTimeMillis());
 		}
 	}
 }

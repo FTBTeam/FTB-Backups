@@ -31,6 +31,14 @@ public class BackupCommands
 						.requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
 						.executes(ctx -> size(ctx.getSource()))
 				)
+				.then(Commands.literal("status")
+						.requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
+						.executes(ctx -> status(ctx.getSource()))
+				)
+				.then(Commands.literal("reset")
+						.requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
+						.executes(ctx -> resetState(ctx.getSource()))
+				)
 		);
 	}
 
@@ -69,6 +77,33 @@ public class BackupCommands
 		source.sendSuccess(new TranslatableComponent("ftbbackups.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
 		source.sendSuccess(new TranslatableComponent("ftbbackups.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
 		source.sendSuccess(new TranslatableComponent("ftbbackups.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.maxTotalSize, Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
+
+		return 1;
+	}
+
+	private static int status(CommandSourceStack source)
+	{
+		source.getServer().getAllLevels().forEach(level -> {
+			if (level != null) {
+				source.sendSuccess(new TranslatableComponent("Current status for " + level.toString() + ": " + (!level.noSave ? "NO SAVE !!" : "Autosave")), true);
+			}
+		});
+
+		return 1;
+	}
+
+	private static int resetState(CommandSourceStack source)
+	{
+		source.getServer().getAllLevels().forEach(level -> {
+			if (level != null) {
+				source.sendSuccess(new TranslatableComponent("Reseting state + saving for " + level.toString()), true);
+				level.noSave = false;
+				level.save(null, true, true);
+			}
+		});
+
+		source.sendSuccess(new TranslatableComponent("Reseting state + saving for players"), true);
+		source.getServer().getPlayerList().saveAll();
 
 		return 1;
 	}
