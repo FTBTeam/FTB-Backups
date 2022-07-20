@@ -19,6 +19,7 @@ public class FTBBackupsConfig
 	public static int backupsToKeep;
 	public static long backupTimer;
 	public static int compressionLevel;
+	public static boolean use7ZipInstead;
 	public static String folder;
 	public static boolean displayFileSize;
 	public static List<String> extraFiles;
@@ -57,6 +58,7 @@ public class FTBBackupsConfig
 		backupsToKeep = cfg.backupsToKeep.get();
 		backupTimer = cfg.backupTimer.get() * 60000L;
 		compressionLevel = cfg.compressionLevel.get();
+		use7ZipInstead = cfg.use7zipInstead.get();
 		folder = cfg.folder.get();
 		displayFileSize = cfg.displayFileSize.get();
 		extraFiles = new ArrayList<>(cfg.extraFiles.get());
@@ -96,6 +98,7 @@ public class FTBBackupsConfig
 		private final ForgeConfigSpec.IntValue backupsToKeep;
 		private final ForgeConfigSpec.IntValue backupTimer;
 		private final ForgeConfigSpec.IntValue compressionLevel;
+		private final ForgeConfigSpec.BooleanValue use7zipInstead;
 		private final ForgeConfigSpec.ConfigValue<String> folder;
 		private final ForgeConfigSpec.BooleanValue displayFileSize;
 		private final ForgeConfigSpec.ConfigValue<List<? extends String>> extraFiles;
@@ -144,6 +147,11 @@ public class FTBBackupsConfig
 					)
 					.translation("ftbbackups.general.compression_level")
 					.defineInRange("compression_level", 1, 0, 9);
+
+			use7zipInstead = builder
+					.comment("Use 7-Zip archive instead of ZIP archive for backup files.")
+					.translation("ftbbackups.general.use_7zip_instead")
+					.define("use_7zip_instead", false);
 
 			folder = builder
 					.comment("Absolute path to backups folder.")

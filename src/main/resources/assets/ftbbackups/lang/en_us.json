@@ -6,6 +6,7 @@
 	"ftbbackups.general.backups_to_keep": "Backups to Keep",
 	"ftbbackups.general.backup_timer": "Backup Timer",
 	"ftbbackups.general.compression_level": "Compression Level",
+	"ftbbackups.general.use_7zip_instead": "Use .7z File Type",
 	"ftbbackups.general.folder": "Folder",
 	"ftbbackups.general.display_file_size": "Display File Size",
 	"ftbbackups.general.use_separate_thread": "Use Separate Thread",

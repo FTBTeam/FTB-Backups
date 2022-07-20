@@ -18,6 +18,8 @@ import net.minecraft.world.storage.FolderName;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.network.PacketDistributor;
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -322,46 +324,91 @@ public enum Backups
 
 			if (FTBBackupsConfig.compressionLevel > 0)
 			{
-				out.append(".zip");
-				dstFile = BackupUtils.newFile(new File(backupsFolder, out.toString()));
+				long start;
 
-				long start = System.currentTimeMillis();
-
-				ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(dstFile));
-				zos.setLevel(FTBBackupsConfig.compressionLevel);
-
-				byte[] buffer = new byte[FTBBackupsConfig.bufferSize];
-
-				FTBBackups.LOGGER.info("Compressing " + totalFiles + " files...");
-
-				currentFile = 0;
-				for (Map.Entry<File, String> entry : fileMap.entrySet())
+				if (FTBBackupsConfig.use7ZipInstead) // config option to switch to 7z
 				{
-					try
+					out.append(".7z");
+					dstFile = BackupUtils.newFile(new File(backupsFolder, out.toString()));
+
+					start = System.currentTimeMillis();
+
+					byte[] buffer = new byte[FTBBackupsConfig.bufferSize];
+
+					FTBBackups.LOGGER.info("Compressing " + totalFiles + " files...");
+
+					try (SevenZOutputFile szo = new SevenZOutputFile(dstFile))
 					{
-						ZipEntry ze = new ZipEntry(entry.getValue());
-						currentFileName = entry.getValue();
-
-						zos.putNextEntry(ze);
-						FileInputStream fis = new FileInputStream(entry.getKey());
-
-						int len;
-						while ((len = fis.read(buffer)) > 0)
+						for (Map.Entry<File, String> entry : fileMap.entrySet())
 						{
-							zos.write(buffer, 0, len);
+							try
+							{
+								SevenZArchiveEntry sze = new SevenZArchiveEntry();
+								sze.setName(entry.getValue());
+
+								szo.putArchiveEntry(sze);
+
+								try (FileInputStream fis = new FileInputStream(entry.getKey()))
+								{
+									int len;
+									while ((len = fis.read(buffer)) > 0)
+									{
+										szo.write(buffer, 0, len);
+									}
+									szo.closeArchiveEntry();
+								}
+							}
+							catch (Exception e)
+							{
+								FTBBackups.LOGGER.error("Failed to read file" + entry.getValue() + ": " + e);
+							}
+
+							currentFile++;
 						}
-						zos.closeEntry();
-						fis.close();
 					}
-					catch (Exception ex)
+				} else {
+					out.append(".zip");
+					dstFile = BackupUtils.newFile(new File(backupsFolder, out.toString()));
+
+					start = System.currentTimeMillis();
+
+					ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(dstFile));
+					zos.setLevel(FTBBackupsConfig.compressionLevel);
+
+					byte[] buffer = new byte[FTBBackupsConfig.bufferSize];
+
+					FTBBackups.LOGGER.info("Compressing " + totalFiles + " files...");
+
+					currentFile = 0;
+					for (Map.Entry<File, String> entry : fileMap.entrySet())
 					{
-						FTBBackups.LOGGER.error("Failed to read file " + entry.getValue() + ": " + ex);
+						try
+						{
+							ZipEntry ze = new ZipEntry(entry.getValue());
+							currentFileName = entry.getValue();
+
+							zos.putNextEntry(ze);
+							FileInputStream fis = new FileInputStream(entry.getKey());
+
+							int len;
+							while ((len = fis.read(buffer)) > 0)
+							{
+								zos.write(buffer, 0, len);
+							}
+							zos.closeEntry();
+							fis.close();
+						}
+						catch (Exception ex)
+						{
+							FTBBackups.LOGGER.error("Failed to read file " + entry.getValue() + ": " + ex);
+						}
+
+						currentFile++;
 					}
 
-					currentFile++;
+					zos.close();
 				}
 
-				zos.close();
 				fileSize = BackupUtils.getSize(dstFile);
 				FTBBackups.LOGGER.info("Done compressing in " + BackupUtils.getTimeString(System.currentTimeMillis() - start) + " seconds (" + BackupUtils.getSizeString(fileSize) + ")!");
 			}
