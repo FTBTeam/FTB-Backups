@@ -2,7 +2,7 @@ package com.feed_the_beast.mods.ftbbackups;
 
 import com.feed_the_beast.mods.ftbbackups.net.BackupProgressPacket;
 import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
@@ -57,32 +57,32 @@ public class FTBBackups
 	{
 		if (FTBBackupsConfig.forceOnShutdown)
 		{
-			Backups.INSTANCE.run(event.getServer(), true, new TextComponent("Server"), "");
+			Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
 		}
 	}
 
 	@SubscribeEvent
 	public static void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
 	{
-		if (event.getPlayer() instanceof ServerPlayer)
+		if (event.getEntity() instanceof ServerPlayer)
 		{
-			FTBBackupsNetHandler.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getPlayer()), new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles));
+			FTBBackupsNetHandler.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles));
 		}
 	}
 
 	@SubscribeEvent
 	public static void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event)
 	{
-		if (event.getPlayer() instanceof ServerPlayer)
+		if (event.getEntity() instanceof ServerPlayer)
 		{
 			Backups.INSTANCE.hadPlayersOnline = true;
 		}
 	}
 
 	@SubscribeEvent
-	public static void worldTick(TickEvent.WorldTickEvent event) {
-		if (event.phase != TickEvent.Phase.START && !event.world.isClientSide()) {
-			Backups.INSTANCE.tick(event.world.getServer(), System.currentTimeMillis());
+	public static void worldTick(TickEvent.ServerTickEvent event) {
+		if (event.phase != TickEvent.Phase.START && !event.side.isClient()) {
+			Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
 		}
 	}
 }

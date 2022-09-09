@@ -105,7 +105,7 @@ public enum Backups
 			if (!FTBBackupsConfig.onlyIfPlayersOnline || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty())
 			{
 				hadPlayersOnline = false;
-				run(server, true, new TextComponent("Server"), "");
+				run(server, true, Component.translatable("Server"), "");
 			}
 		}
 
@@ -145,7 +145,7 @@ public enum Backups
 		component = component.plainCopy();
 		component.getStyle().withColor(TextColor.fromLegacyFormat(error ? ChatFormatting.DARK_RED : ChatFormatting.LIGHT_PURPLE));
 		FTBBackups.LOGGER.info(component.getString());
-		server.getPlayerList().broadcastMessage(component, ChatType.GAME_INFO, Util.NIL_UUID);
+		server.getPlayerList().broadcastSystemMessage(component, true);
 	}
 
 	public boolean run(MinecraftServer server, boolean auto, Component name, String customName)
@@ -160,7 +160,7 @@ public enum Backups
 			return false;
 		}
 
-		notifyAll(server, new TranslatableComponent("ftbbackups.lang.start", name), false);
+		notifyAll(server, Component.translatable("ftbbackups.lang.start", name), false);
 		nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
 
 		for (ServerLevel world : server.getAllLevels())
@@ -184,12 +184,12 @@ public enum Backups
 				catch (Exception ex)
 				{
 					ex.printStackTrace();
-					notifyAll(server, new TranslatableComponent("ftbbackups.lang.saving_failed"), true);
+					notifyAll(server, Component.translatable("ftbbackups.lang.saving_failed"), true);
 				}
 			}
 			catch (Exception ex)
 			{
-				notifyAll(server, new TranslatableComponent("ftbbackups.lang.saving_failed"), true);
+				notifyAll(server, Component.translatable("ftbbackups.lang.saving_failed"), true);
 				ex.printStackTrace();
 			}
 
@@ -393,7 +393,7 @@ public enum Backups
 			if (!FTBBackupsConfig.silent)
 			{
 				String errorName = ex.getClass().getName();
-				notifyAll(server, new TranslatableComponent("ftbbackups.lang.fail", errorName), true);
+				notifyAll(server, Component.translatable("ftbbackups.lang.fail", errorName), true);
 			}
 
 			ex.printStackTrace();
@@ -432,15 +432,15 @@ public enum Backups
 				String sizeB = BackupUtils.getSizeString(fileSize);
 				String sizeT = BackupUtils.getSizeString(totalSize);
 				String sizeString = sizeB.equals(sizeT) ? sizeB : (sizeB + " | " + sizeT);
-				component = new TranslatableComponent("ftbbackups.lang.end_2", timeString, sizeString);
+				component = Component.translatable("ftbbackups.lang.end_2", timeString, sizeString);
 			}
 			else
 			{
-				component = new TranslatableComponent("ftbbackups.lang.end_1", timeString);
+				component = Component.translatable("ftbbackups.lang.end_1", timeString);
 			}
 
 			component.getStyle().withColor(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE));
-			server.getPlayerList().broadcastMessage(component, ChatType.CHAT, Util.NIL_UUID);
+			server.getPlayerList().broadcastSystemMessage(component, true);
 		}
 	}
 
