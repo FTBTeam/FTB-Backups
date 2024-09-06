@@ -79,6 +79,9 @@ public class BackupCommands
 	{
 		source.getServer().getAllLevels().forEach(level -> {
 			if (level != null) {
+				//[Dev: Current status for ServerLevel[world]: NO SAVE !!] x3
+				//level.dimension().toString() - ResourceKey[minecraft:dimension / minecraft:overworld]
+				//level.toSting() - ServerLevel[New World]
 				source.sendSuccess(() -> Component.literal("Current status for " + level.toString() + ": " + (!level.noSave ? "NO SAVE !!" : "Autosave")), true);
 			}
 		});

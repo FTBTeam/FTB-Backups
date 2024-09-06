@@ -2,6 +2,7 @@ package dev.ftb.mods.ftbbackups;
 
 
 
+import net.neoforged.fml.ModContainer;
 import org.apache.commons.lang3.tuple.Pair;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
@@ -32,15 +33,13 @@ public class FTBBackupsConfig
 
 	private static Pair<CommonConfig, ModConfigSpec> common;
 
-	public static void register(IEventBus eventBus)
+	public static void register(IEventBus eventBus, ModContainer container)
 	{
 		eventBus.addListener(FTBBackupsConfig::reload);
 
 		common = new ModConfigSpec.Builder().configure(CommonConfig::new);
 
-		ModLoadingContext modLoadingContext = ModLoadingContext.get();
-		//TODO: Register Configs??
-		/*modLoadingContext.registerConfig(ModConfig.Type.COMMON, common.getRight());*/
+		container.registerConfig(ModConfig.Type.COMMON, common.getRight());
 	}
 
 	public static void reload(ModConfigEvent event)
