@@ -1,23 +1,22 @@
-package com.feed_the_beast.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups;
 
-import com.feed_the_beast.mods.ftbbackups.net.BackupProgressPacket;
-import com.feed_the_beast.mods.ftbbackups.net.FTBBackupsNetHandler;
+import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
+import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.network.chat.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.common.NeoForge;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
@@ -44,7 +43,7 @@ public enum Backups
 
 	public void init(MinecraftServer server)
 	{
-		File dataDir = server.getServerDirectory();
+		Path dataDir = server.getServerDirectory();
 		backupsFolder = FTBBackupsConfig.folder.trim().isEmpty() ? FMLPaths.GAMEDIR.get().resolve("backups").toFile() : new File(FTBBackupsConfig.folder);
 
 		try
@@ -58,7 +57,7 @@ public enum Backups
 		doingBackup = BackupStatus.NONE;
 		backups.clear();
 
-		File file = new File(dataDir, "local/ftbutilities/backups.json");
+		File file = new File(dataDir.toFile(), "local/ftbutilities/backups.json");
 
 		if (!file.exists())
 		{
@@ -123,7 +122,7 @@ public enum Backups
 
 			if (!FTBBackupsConfig.silent)
 			{
-				FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(0, 0));
+				//TODO: Fix FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(0, 0));
 			}
 		}
 		else if (doingBackup.isRunning() && printFiles)
@@ -135,7 +134,7 @@ public enum Backups
 
 			if (!FTBBackupsConfig.silent)
 			{
-				FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(currentFile, totalFiles));
+				//TODO: Fix FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(currentFile, totalFiles));
 			}
 		}
 	}
@@ -236,7 +235,7 @@ public enum Backups
 		try
 		{
 			LinkedHashMap<File, String> fileMap = new LinkedHashMap<>();
-			String mcdir = server.getServerDirectory().getCanonicalFile().getAbsolutePath();
+			String mcdir = server.getServerDirectory().getFileSystem().toString();
 
 			Consumer<File> consumer = file0 -> {
 				for (File file : BackupUtils.listTree(file0))
@@ -257,7 +256,7 @@ public enum Backups
 				consumer.accept(new File(s));
 			}
 
-			MinecraftForge.EVENT_BUS.post(new BackupEvent.Pre(consumer));
+			NeoForge.EVENT_BUS.post(new BackupEvent.Pre(consumer));
 
 			for (File file : BackupUtils.listTree(src))
 			{
@@ -404,7 +403,7 @@ public enum Backups
 
 		Backup backup = new Backup(time.getTimeInMillis(), out.toString().replace('\\', '/'), getLastIndex() + 1, success, fileSize);
 		backups.add(backup);
-		MinecraftForge.EVENT_BUS.post(new BackupEvent.Post(backup, error));
+		NeoForge.EVENT_BUS.post(new BackupEvent.Post(backup, error));
 
 		JsonArray array = new JsonArray();
 
@@ -413,7 +412,7 @@ public enum Backups
 			array.add(backup1.toJsonObject());
 		}
 
-		BackupUtils.toJson(new File(server.getServerDirectory(), "local/ftbutilities/backups.json"), array, true);
+		BackupUtils.toJson(new File(server.getServerDirectory().toFile(), "local/ftbutilities/backups.json"), array, true);
 
 		if (error == null && !FTBBackupsConfig.silent)
 		{

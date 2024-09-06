@@ -1,4 +1,4 @@
-package com.feed_the_beast.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups;
 
 /**
  * @author LatvianModder

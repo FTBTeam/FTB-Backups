@@ -1,8 +1,7 @@
-package com.feed_the_beast.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -44,7 +43,7 @@ public class BackupCommands
 
 	private static int time(CommandSourceStack source)
 	{
-		source.sendSuccess(Component.translatable("ftbbackups.lang.timer", BackupUtils.getTimeString(Backups.INSTANCE.nextBackup - System.currentTimeMillis())), true);
+		source.sendSuccess(() -> Component.translatable("ftbbackups.lang.timer", BackupUtils.getTimeString(Backups.INSTANCE.nextBackup - System.currentTimeMillis())),true);
 		return 1;
 	}
 
@@ -59,7 +58,7 @@ public class BackupCommands
 		}
 		else
 		{
-			source.sendSuccess(Component.translatable("ftbbackups.lang.already_running"), true);
+			source.sendSuccess(() -> Component.translatable("ftbbackups.lang.already_running"), true);
 		}
 
 		return 1;
@@ -67,16 +66,11 @@ public class BackupCommands
 
 	private static int size(CommandSourceStack source)
 	{
-		long totalSize = 0L;
+		long totalSize = Backups.INSTANCE.backups.stream().mapToLong(backup -> backup.size).sum();
 
-		for (Backup backup : Backups.INSTANCE.backups)
-		{
-			totalSize += backup.size;
-		}
-
-		source.sendSuccess(Component.translatable("ftbbackups.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
-		source.sendSuccess(Component.translatable("ftbbackups.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
-		source.sendSuccess(Component.translatable("ftbbackups.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.maxTotalSize, Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
+		source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
+		source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.maxTotalSize, Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
 
 		return 1;
 	}
@@ -85,7 +79,7 @@ public class BackupCommands
 	{
 		source.getServer().getAllLevels().forEach(level -> {
 			if (level != null) {
-				source.sendSuccess(Component.translatable("Current status for " + level.toString() + ": " + (!level.noSave ? "NO SAVE !!" : "Autosave")), true);
+				source.sendSuccess(() -> Component.literal("Current status for " + level.toString() + ": " + (!level.noSave ? "NO SAVE !!" : "Autosave")), true);
 			}
 		});
 
@@ -96,13 +90,13 @@ public class BackupCommands
 	{
 		source.getServer().getAllLevels().forEach(level -> {
 			if (level != null) {
-				source.sendSuccess(Component.translatable("Reseting state + saving for " + level.toString()), true);
+				source.sendSuccess(() -> Component.literal("Reseting state + saving for " + level.toString()), true);
 				level.noSave = false;
 				level.save(null, true, true);
 			}
 		});
 
-		source.sendSuccess(Component.translatable("Reseting state + saving for players"), true);
+		source.sendSuccess(() -> Component.literal("Reseting state + saving for players"), true);
 		source.getServer().getPlayerList().saveAll();
 
 		return 1;

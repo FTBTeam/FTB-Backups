@@ -1,11 +1,13 @@
-package com.feed_the_beast.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups;
 
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+
+
 import org.apache.commons.lang3.tuple.Pair;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,16 +30,17 @@ public class FTBBackupsConfig
 	public static boolean forceOnShutdown;
 	public static int bufferSize;
 
-	private static Pair<CommonConfig, ForgeConfigSpec> common;
+	private static Pair<CommonConfig, ModConfigSpec> common;
 
-	public static void register()
+	public static void register(IEventBus eventBus)
 	{
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(FTBBackupsConfig::reload);
+		eventBus.addListener(FTBBackupsConfig::reload);
 
-		common = new ForgeConfigSpec.Builder().configure(CommonConfig::new);
+		common = new ModConfigSpec.Builder().configure(CommonConfig::new);
 
 		ModLoadingContext modLoadingContext = ModLoadingContext.get();
-		modLoadingContext.registerConfig(ModConfig.Type.COMMON, common.getRight());
+		//TODO: Register Configs??
+		/*modLoadingContext.registerConfig(ModConfig.Type.COMMON, common.getRight());*/
 	}
 
 	public static void reload(ModConfigEvent event)
@@ -64,21 +67,22 @@ public class FTBBackupsConfig
 
 		String mts = cfg.maxTotalSize.get();
 
+		long l = Long.parseLong(mts.substring(0, mts.length() - 2).trim());
 		if (mts.endsWith("TB"))
 		{
-			maxTotalSize = Long.parseLong(mts.substring(0, mts.length() - 2).trim()) * BackupUtils.TB;
+			maxTotalSize = l * BackupUtils.TB;
 		}
 		else if (mts.endsWith("GB"))
 		{
-			maxTotalSize = Long.parseLong(mts.substring(0, mts.length() - 2).trim()) * BackupUtils.GB;
+			maxTotalSize = l * BackupUtils.GB;
 		}
 		else if (mts.endsWith("MB"))
 		{
-			maxTotalSize = Long.parseLong(mts.substring(0, mts.length() - 2).trim()) * BackupUtils.MB;
+			maxTotalSize = l * BackupUtils.MB;
 		}
 		else if (mts.endsWith("KB"))
 		{
-			maxTotalSize = Long.parseLong(mts.substring(0, mts.length() - 2).trim()) * BackupUtils.KB;
+			maxTotalSize = l * BackupUtils.KB;
 		}
 		else
 		{
@@ -92,20 +96,21 @@ public class FTBBackupsConfig
 
 	private static class CommonConfig
 	{
-		private final ForgeConfigSpec.BooleanValue auto;
-		private final ForgeConfigSpec.BooleanValue silent;
-		private final ForgeConfigSpec.IntValue backupsToKeep;
-		private final ForgeConfigSpec.IntValue backupTimer;
-		private final ForgeConfigSpec.IntValue compressionLevel;
-		private final ForgeConfigSpec.ConfigValue<String> folder;
-		private final ForgeConfigSpec.BooleanValue displayFileSize;
-		private final ForgeConfigSpec.ConfigValue<List<? extends String>> extraFiles;
-		private final ForgeConfigSpec.ConfigValue<String> maxTotalSize;
-		private final ForgeConfigSpec.BooleanValue onlyIfPlayersOnline;
-		private final ForgeConfigSpec.BooleanValue forceOnShutdown;
-		private final ForgeConfigSpec.IntValue bufferSize;
+		//ModConfigSpec or NeoForgeConfig
+		private final ModConfigSpec.BooleanValue auto;
+		private final ModConfigSpec.BooleanValue silent;
+		private final ModConfigSpec.IntValue backupsToKeep;
+		private final ModConfigSpec.IntValue backupTimer;
+		private final ModConfigSpec.IntValue compressionLevel;
+		private final ModConfigSpec.ConfigValue<String> folder;
+		private final ModConfigSpec.BooleanValue displayFileSize;
+		private final ModConfigSpec.ConfigValue<List<? extends String>> extraFiles;
+		private final ModConfigSpec.ConfigValue<String> maxTotalSize;
+		private final ModConfigSpec.BooleanValue onlyIfPlayersOnline;
+		private final ModConfigSpec.BooleanValue forceOnShutdown;
+		private final ModConfigSpec.IntValue bufferSize;
 
-		private CommonConfig(ForgeConfigSpec.Builder builder)
+		private CommonConfig(ModConfigSpec.Builder builder)
 		{
 			auto = builder
 					.comment("Enables backups to run automatically.")

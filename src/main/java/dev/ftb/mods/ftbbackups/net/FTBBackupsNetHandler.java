@@ -1,15 +1,15 @@
-package com.feed_the_beast.mods.ftbbackups.net;
+package dev.ftb.mods.ftbbackups.net;
 
-import com.feed_the_beast.mods.ftbbackups.FTBBackups;
+import dev.ftb.mods.ftbbackups.FTBBackups;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
 
 import java.util.function.Predicate;
 
 public class FTBBackupsNetHandler
 {
-	public static SimpleChannel MAIN;
+
+	//TODO NetHandler
+	/*public static SimpleChannel MAIN;
 	private static final String MAIN_VERSION = "1";
 
 	public static void init()
@@ -24,5 +24,5 @@ public class FTBBackupsNetHandler
 				.simpleChannel();
 
 		MAIN.registerMessage(1, BackupProgressPacket.class, BackupProgressPacket::write, BackupProgressPacket::new, BackupProgressPacket::handle);
-	}
+	}*/
 }

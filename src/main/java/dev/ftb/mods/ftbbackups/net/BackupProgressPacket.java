@@ -1,10 +1,7 @@
-package com.feed_the_beast.mods.ftbbackups.net;
+package dev.ftb.mods.ftbbackups.net;
 
-import com.feed_the_beast.mods.ftbbackups.FTBBackupsClient;
+import dev.ftb.mods.ftbbackups.FTBBackupsClient;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
 
 /**
  * @author LatvianModder
@@ -31,9 +28,10 @@ public class BackupProgressPacket
 		buf.writeVarInt(current);
 	}
 
-	public void handle(Supplier<NetworkEvent.Context> context)
+	//TODO This
+	/*public void handle(Supplier<NetworkEvent.Context> context)
 	{
 		context.get().enqueueWork(() -> FTBBackupsClient.setFiles(current, total));
 		context.get().setPacketHandled(true);
-	}
+	}*/
 }
