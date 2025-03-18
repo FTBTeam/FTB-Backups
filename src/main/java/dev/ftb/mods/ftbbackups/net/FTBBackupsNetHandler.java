@@ -5,10 +5,9 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.Predicate;
 
-public class FTBBackupsNetHandler
-{
+public class FTBBackupsNetHandler {
 
-	//TODO NetHandler
+    //TODO NetHandler
 	/*public static SimpleChannel MAIN;
 	private static final String MAIN_VERSION = "1";
 

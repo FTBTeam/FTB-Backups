@@ -26,69 +26,59 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Mod(FTBBackups.MOD_ID)
-public class FTBBackups
-{
-	public static final String MOD_ID = "ftbbackups";
-	public static final Logger LOGGER = LogManager.getLogger("FTB Utilities Backups");
+public class FTBBackups {
+    public static final String MOD_ID = "ftbbackups";
+    public static final Logger LOGGER = LogManager.getLogger("FTB Utilities Backups");
 
-	public FTBBackups(IEventBus eventBus, ModContainer container)
-	{
-		eventBus.addListener(this::clientSetup);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerCommands);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::worldTick);
+    public FTBBackups(IEventBus eventBus, ModContainer container) {
+        eventBus.addListener(this::clientSetup);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerCommands);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::worldTick);
 //		FTBBackupsNetHandler.init();
-		FTBBackupsConfig.register(eventBus, container);
-		//ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
-	}
-	private void clientSetup(FMLClientSetupEvent event)
-	{
-		FTBBackupsClient.init();
-	}
+        FTBBackupsConfig.register(eventBus, container);
+        //ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+    }
 
-	public void serverAboutToStart(ServerAboutToStartEvent event)
-	{
-		Backups.INSTANCE.init(event.getServer());
-	}
+    private void clientSetup(FMLClientSetupEvent event) {
+        FTBBackupsClient.init();
+    }
 
-	public void registerCommands(RegisterCommandsEvent event)
-	{
-		BackupCommands.register(event.getDispatcher());
-	}
+    public void serverAboutToStart(ServerAboutToStartEvent event) {
+        Backups.INSTANCE.init(event.getServer());
+    }
 
-	public void serverStopping(ServerStoppingEvent event)
-	{
-		if (FTBBackupsConfig.forceOnShutdown)
-		{
-			Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
-		}
-	}
+    public void registerCommands(RegisterCommandsEvent event) {
+        BackupCommands.register(event.getDispatcher());
+    }
 
-	public void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
-	{
-		if (event.getEntity() instanceof ServerPlayer)
-		{
-			//TODO: Send Packets
-			//FTBBackupsNetHandler.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles));
-		}
-	}
+    public void serverStopping(ServerStoppingEvent event) {
+        if (FTBBackupsConfig.forceOnShutdown) {
+            Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
+        }
+    }
 
-	public void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event)
-	{
-		if (event.getEntity() instanceof ServerPlayer)
-		{
-			Backups.INSTANCE.hadPlayersOnline = true;
-		}
-	}
+    public void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer) {
+            //TODO: Send Packets
+            //FTBBackupsNetHandler.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles));
+        }
+    }
 
-	public void worldTick(ServerTickEvent.Post event) {
+    public void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer) {
+            Backups.INSTANCE.hadPlayersOnline = true;
+        }
+    }
+
+    public void worldTick(ServerTickEvent.Post event) {
 		/*if (event.phase != ServerTickEvent.PostTickEvent.Phase.START && !event.side.isClient()) {
 			Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
 		}*/
-		//I Guess this is just called server side now??
-		Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
-	}
+        //I Guess this is just called server side now??
+        Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
+    }
 }
