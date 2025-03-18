@@ -1,5 +1,6 @@
 package dev.ftb.mods.ftbbackups;
 
+import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
 import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -17,81 +18,66 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Mod(FTBBackups.MOD_ID)
-public class FTBBackups
-{
-	public static final String MOD_ID = "ftbbackups";
-	public static final Logger LOGGER = LogManager.getLogger("FTB Backups 3");
+public class FTBBackups {
+    public static final String MOD_ID = "ftbbackups";
+    public static final Logger LOGGER = LogManager.getLogger("FTB Backups 3");
 
-	public FTBBackups(IEventBus eventBus, ModContainer container)
-	{
-		if (FMLEnvironment.dist == Dist.CLIENT) {
-			eventBus.addListener(this::clientSetup);
-		}
-		eventBus.addListener(FTBBackupsNetHandler::init);
+    public FTBBackups(IEventBus eventBus, ModContainer container) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            eventBus.addListener(this::clientSetup);
+        }
+        eventBus.addListener(FTBBackupsNetHandler::init);
 
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerCommands);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
-		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::worldTick);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerCommands);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::worldTick);
 
-		FTBBackupsConfig.register(eventBus, container);
-	}
+        FTBBackupsConfig.register(eventBus, container);
+    }
 
-	public static ResourceLocation id(String path) {
-		return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
-	}
+    public static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+    }
 
-	private void clientSetup(FMLClientSetupEvent event)
-	{
-		FTBBackupsClient.init();
-	}
+    private void clientSetup(FMLClientSetupEvent event) {
+        FTBBackupsClient.init();
+    }
 
-	public void serverAboutToStart(ServerAboutToStartEvent event)
-	{
-		Backups.INSTANCE.init(event.getServer());
-	}
+    public void serverAboutToStart(ServerAboutToStartEvent event) {
+        Backups.INSTANCE.init(event.getServer());
+    }
 
-	public void registerCommands(RegisterCommandsEvent event)
-	{
-		BackupCommands.register(event.getDispatcher());
-	}
+    public void registerCommands(RegisterCommandsEvent event) {
+        BackupCommands.register(event.getDispatcher());
+    }
 
-	public void serverStopping(ServerStoppingEvent event)
-	{
-		if (FTBBackupsConfig.forceOnShutdown)
-		{
-			Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
-		}
-	}
+    public void serverStopping(ServerStoppingEvent event) {
+        if (FTBBackupsConfig.forceOnShutdown) {
+            Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
+        }
+    }
 
-	public void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event)
-	{
-		if (event.getEntity() instanceof ServerPlayer)
-		{
-			//TODO: Send Packets
-			//FTBBackupsNetHandler.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles));
-		}
-	}
+    public void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            PacketDistributor.sendToPlayer(serverPlayer, BackupProgressPacket.create());
+        }
+    }
 
-	public void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event)
-	{
-		if (event.getEntity() instanceof ServerPlayer)
-		{
-			Backups.INSTANCE.hadPlayersOnline = true;
-		}
-	}
+    public void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer) {
+            Backups.INSTANCE.hadPlayersOnline = true;
+        }
+    }
 
-	public void worldTick(ServerTickEvent.Post event) {
-		/*if (event.phase != ServerTickEvent.PostTickEvent.Phase.START && !event.side.isClient()) {
-			Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
-		}*/
-		//I Guess this is just called server side now??
-		Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
-	}
+    public void worldTick(ServerTickEvent.Post event) {
+        Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
+    }
 }

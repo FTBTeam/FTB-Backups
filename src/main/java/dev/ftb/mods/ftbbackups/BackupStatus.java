@@ -1,26 +1,19 @@
 package dev.ftb.mods.ftbbackups;
 
-/**
- * @author LatvianModder
- */
-public enum BackupStatus
-{
-	NONE,
-	RUNNING,
-	DONE;
+public enum BackupStatus {
+    NONE,
+    RUNNING,
+    DONE;
 
-	public boolean isRunning()
-	{
-		return this == RUNNING;
-	}
+    public boolean isRunning() {
+        return this == RUNNING;
+    }
 
-	public boolean isDone()
-	{
-		return this == DONE;
-	}
+    public boolean isDone() {
+        return this == DONE;
+    }
 
-	public boolean isRunningOrDone()
-	{
-		return isRunning() || isDone();
-	}
+    public boolean isRunningOrDone() {
+        return isRunning() || isDone();
+    }
 }

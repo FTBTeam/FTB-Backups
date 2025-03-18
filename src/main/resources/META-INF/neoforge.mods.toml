@@ -13,11 +13,11 @@ description = '''
 Creates backups of your world'''
 
 [[dependencies.ftbbackups]]
-modId="neoforge"
+modId = "neoforge"
 mandatory = true
 versionRange = "[21,)"
 ordering = "NONE"
-side="BOTH"
+side = "BOTH"
 
 #[[dependencies.ftbbackups]]
 #modId="minecraft"
