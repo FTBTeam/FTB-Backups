@@ -1,37 +1,28 @@
 package dev.ftb.mods.ftbbackups.net;
 
+import dev.ftb.mods.ftbbackups.FTBBackups;
 import dev.ftb.mods.ftbbackups.FTBBackupsClient;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/**
- * @author LatvianModder
- */
-public class BackupProgressPacket
-{
-	private int current, total;
+public record BackupProgressPacket(int current, int total) implements CustomPacketPayload {
+	public static final Type<BackupProgressPacket> TYPE = new Type<>(FTBBackups.id("backup_progress"));
 
-	public BackupProgressPacket(int c, int t)
-	{
-		current = c;
-		total = t;
+	public static final StreamCodec<FriendlyByteBuf, BackupProgressPacket> STREAM_CODEC = StreamCodec.composite(
+			ByteBufCodecs.VAR_INT, BackupProgressPacket::current,
+			ByteBufCodecs.VAR_INT, BackupProgressPacket::total,
+			BackupProgressPacket::new
+	);
+
+	@Override
+	public Type<? extends CustomPacketPayload> type() {
+		return TYPE;
 	}
 
-	public BackupProgressPacket(FriendlyByteBuf buf)
-	{
-		total = buf.readVarInt();
-		current = buf.readVarInt();
+	public static void handler(BackupProgressPacket message, IPayloadContext context) {
+		FTBBackupsClient.setFiles(message.current, message.total);
 	}
-
-	public void write(FriendlyByteBuf buf)
-	{
-		buf.writeVarInt(total);
-		buf.writeVarInt(current);
-	}
-
-	//TODO This
-	/*public void handle(Supplier<NetworkEvent.Context> context)
-	{
-		context.get().enqueueWork(() -> FTBBackupsClient.setFiles(current, total));
-		context.get().setPacketHandled(true);
-	}*/
 }

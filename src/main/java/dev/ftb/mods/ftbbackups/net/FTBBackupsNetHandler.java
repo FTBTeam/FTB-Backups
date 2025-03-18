@@ -1,28 +1,16 @@
 package dev.ftb.mods.ftbbackups.net;
 
 import dev.ftb.mods.ftbbackups.FTBBackups;
-import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-import java.util.function.Predicate;
+public class FTBBackupsNetHandler {
+    private static final String NETWORK_VERSION = "1.0";
 
-public class FTBBackupsNetHandler
-{
+    public static void init(final RegisterPayloadHandlersEvent event) {
+        final PayloadRegistrar registrar = event.registrar(FTBBackups.MOD_ID)
+                .versioned(NETWORK_VERSION);
 
-	//TODO NetHandler
-	/*public static SimpleChannel MAIN;
-	private static final String MAIN_VERSION = "1";
-
-	public static void init()
-	{
-		Predicate<String> validator = v -> MAIN_VERSION.equals(v) || NetworkRegistry.ABSENT.equals(v) || NetworkRegistry.ACCEPTVANILLA.equals(v);
-
-		MAIN = NetworkRegistry.ChannelBuilder
-				.named(new ResourceLocation(FTBBackups.MOD_ID, "main"))
-				.clientAcceptedVersions(validator)
-				.serverAcceptedVersions(validator)
-				.networkProtocolVersion(() -> MAIN_VERSION)
-				.simpleChannel();
-
-		MAIN.registerMessage(1, BackupProgressPacket.class, BackupProgressPacket::write, BackupProgressPacket::new, BackupProgressPacket::handle);
-	}*/
+        registrar.playToClient(BackupProgressPacket.TYPE, BackupProgressPacket.STREAM_CODEC, BackupProgressPacket::handler);
+    }
 }
