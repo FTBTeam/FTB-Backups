@@ -1,68 +1,129 @@
 plugins {
 	id 'java-library'
-	id 'eclipse'
 	id 'idea'
 	id 'maven-publish'
-	id 'net.neoforged.gradle.userdev' version "${neo_gradle}"
-	id "me.modmuss50.mod-publish-plugin" version "0.4.5"
+	id 'net.neoforged.moddev' version '2.0.78'
+	id "me.modmuss50.mod-publish-plugin" version "0.8.3"
 }
 
-def ENV = System.getenv()
-version = "${ENV.GITHUB_RUN_NUMBER}" ? "${mod_version}.${ENV.GITHUB_RUN_NUMBER}" : "${mod_version}.9999"
+tasks.named('wrapper', Wrapper).configure {
+	distributionType = Wrapper.DistributionType.BIN
+}
+
+def mcMinorAndPatch = getMinorAndPatchFromMc()
+
+version = "${mcMinorAndPatch}.${mod_version}"
 group = project.maven_group
-
-repositories {
-	mavenLocal()
-	maven {
-		url "https://cursemaven.com"
-	}
-}
 
 base {
 	archivesName = project.archives_base_name
 }
 
+apply from: 'https://raw.githubusercontent.com/FTBTeam/mods-meta/main/gradle/changelog.gradle'
+apply from: "https://raw.githubusercontent.com/FTBTeam/mods-meta/main/gradle/publishing.gradle"
+
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-runs {
-	configureEach {
-		systemProperty 'forge.logging.markers', 'REGISTRIES'
-		systemProperty 'forge.logging.console.level', 'debug'
-		modSource project.sourceSets.main
+neoForge {
+	version = "${mcMinorAndPatch}.${neo_version}"
+
+	parchment {
+		mappingsVersion = project.parchment_mappings_version
+		minecraftVersion = project.parchment_minecraft_version.replace("\${mc_version}", minecraft_version)
 	}
 
-	client {
-		systemProperty 'forge.enabledGameTestNamespaces', project.archives_base_name
+	runs {
+		configureEach {
+			systemProperty 'forge.logging.markers', 'REGISTRIES'
+			logLevel = org.slf4j.event.Level.DEBUG
+		}
+
+		client {
+			client()
+
+			// Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+			systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+		}
+
+		server {
+			server()
+			programArgument '--nogui'
+			systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+		}
+
+		gameTestServer {
+			type = "gameTestServer"
+			systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+		}
+
+		data {
+			data()
+			programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+		}
 	}
 
-	server {
-		systemProperty 'forge.enabledGameTestNamespaces', project.archives_base_name
-		programArgument '--nogui'
-	}
-
-	data {
-		programArguments.addAll '--mod', project.archives_base_name, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+	mods {
+		"${mod_id}" {
+			sourceSet(sourceSets.main)
+		}
 	}
 }
 
-sourceSets.main.resources {
-	srcDir 'src/generated/resources'
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+// Sets up a dependency configuration called 'localRuntime'.
+// This configuration should be used instead of 'runtimeOnly' to declare
+// a dependency that will be present for runtime testing but that is
+// "optional", meaning it will not be pulled by dependents of this mod.
+configurations {
+	runtimeClasspath.extendsFrom localRuntime
+}
+
+repositories {
+	mavenLocal()
 }
 
 dependencies {
-	implementation "net.neoforged:neoforge:${neo_version}"
 }
+
+tasks.register("sourcesJar", Jar) {
+	archiveClassifier.set("sources")
+	from sourceSets.main.allJava
+}
+
+tasks.register("apiJar", Jar) {
+	archiveClassifier.set("api")
+
+	from sourceSets.main.output
+
+	// Only include the dev.ftb.mods.ftbbackups.api package
+	include 'dev/ftb/mods/ftbbackups/api/**'
+}
+
+tasks.named("jar") {
+	dependsOn("sourcesJar")
+	dependsOn("apiJar")
+}
+
 tasks.withType(ProcessResources).configureEach {
 	var replaceProperties = [
-			version: version
+		version: version,
+		loader_version_range: loader_version_range,
+		// 99.9% of the time we're only going to target a very vague version of neoforge so this is fine.
+		mod_loader_range: mod_loader_range.replace("\${mc_base}", mcMinorAndPatch), // Replace the version in the mod loader range
 	]
+
 	inputs.properties replaceProperties
 
 	filesMatching(['META-INF/neoforge.mods.toml']) {
-		expand replaceProperties + [project: project]
+		expand replaceProperties
+	}
+
+	// Copy in the repos license file
+	from(project.rootDir) {
+		include 'LICENSE.md'
 	}
 }
-
 
 tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
@@ -72,5 +133,55 @@ idea {
 	module {
 		downloadSources = true
 		downloadJavadoc = true
+	}
+}
+
+def getMinorAndPatchFromMc() {
+	String mcVersion = project.minecraft_version
+	String[] split = mcVersion.split("\\.")
+	return split[1] + "." + (split[2] ?: "0")
+}
+
+publishMods {
+	def CFToken = providers.environmentVariable("CURSEFORGE_KEY");
+
+	dryRun = !CFToken.isPresent()
+	displayName = "[NEOFORGE] FTB Backups 3 ${version}"
+	modLoaders.add("neoforge")
+
+	changelog = createChangelog(project)
+	file = jar.archiveFile
+	version = project.version // Pretty sure it defaults to this
+
+	def tag = providers.environmentVariable("TAG").getOrElse("release")
+	type = tag.endsWith("-beta") ? BETA : (tag.endsWith("-alpha") ? ALPHA : STABLE)
+
+	curseforge {
+		accessToken = CFToken.orElse("missing")
+		projectId = project.curseforge_id
+		minecraftVersions.add(project.minecraft_version)
+		javaVersions.add(JavaVersion.VERSION_21)
+	}
+}
+
+publishing {
+	publications {
+		register('mavenJava', MavenPublication) {
+			from components.java
+			artifact sourcesJar
+			artifact apiJar
+		}
+	}
+
+	repositories {
+		if (ftbPublishing.ftbToken) {
+			maven {
+				url ftbPublishing.ftbURL
+				credentials {
+					username = ftbPublishing.ftbUser
+					password = ftbPublishing.ftbToken
+				}
+			}
+		}
 	}
 }

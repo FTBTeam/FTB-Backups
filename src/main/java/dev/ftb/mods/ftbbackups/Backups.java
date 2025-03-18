@@ -1,7 +1,5 @@
 package dev.ftb.mods.ftbbackups;
 
-import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
-import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
