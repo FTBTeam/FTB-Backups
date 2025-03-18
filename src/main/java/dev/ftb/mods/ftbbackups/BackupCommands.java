@@ -63,6 +63,10 @@ public class BackupCommands {
         return 1;
     }
 
+    /**
+     * @deprecated Either remove or improve this
+     */
+    @Deprecated(forRemoval = true, since = "21.1.0")
     private static int status(CommandSourceStack source) {
         source.getServer().getAllLevels().forEach(level -> {
             if (level != null) {
@@ -76,6 +80,10 @@ public class BackupCommands {
         return 1;
     }
 
+    /**
+     * @deprecated This seems like a hack around bigger issues
+     */
+    @Deprecated(forRemoval = true, since = "21.1.0")
     private static int resetState(CommandSourceStack source) {
         source.getServer().getAllLevels().forEach(level -> {
             if (level != null) {

@@ -34,6 +34,11 @@ public class BackupUtils {
     public static final double GB_D = MB_D * 1024D;
     public static final double TB_D = GB_D * 1024D;
 
+    /**
+     * @deprecated This can very likely be replaced with all the new fancy Time API stuff in java,
+     *             Instants, Durations, etc.
+     */
+    @Deprecated(forRemoval = true, since = "21.1.0")
     public static String getTimeString(long millis) {
         boolean neg = false;
         if (millis < 0L) {
@@ -166,6 +171,10 @@ public class BackupUtils {
         }
     }
 
+    /**
+     * @deprecated This can likely be replaced with {@link org.apache.commons.io.FileUtils#copyFile(File, File)}
+     */
+    @Deprecated
     public static void copyFile(File src, File dst) throws Exception {
         if (src.exists() && !src.equals(dst)) {
             if (src.isDirectory() && dst.isDirectory()) {
@@ -186,6 +195,10 @@ public class BackupUtils {
         }
     }
 
+    /**
+     * @deprecated This can likely be replaced with {@link org.apache.commons.io.FileUtils#delete(File)}
+     */
+    @Deprecated
     public static boolean delete(File file) {
         if (!file.exists()) {
             return false;

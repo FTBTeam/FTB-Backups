@@ -2,10 +2,14 @@ package dev.ftb.mods.ftbbackups.net;
 
 import dev.ftb.mods.ftbbackups.FTBBackups;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.function.Predicate;
 
 public class FTBBackupsNetHandler {
+    public static void register(PayloadRegistrar registrar) {
+
+    }
 
     //TODO NetHandler
 	/*public static SimpleChannel MAIN;

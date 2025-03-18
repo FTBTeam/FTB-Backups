@@ -1,8 +1,10 @@
 package dev.ftb.mods.ftbbackups.net;
 
-import dev.ftb.mods.ftbbackups.FTBBackupsClient;
 import net.minecraft.network.FriendlyByteBuf;
 
+/**
+ * TODO: Add back @des
+ */
 public class BackupProgressPacket {
     private int current, total;
 

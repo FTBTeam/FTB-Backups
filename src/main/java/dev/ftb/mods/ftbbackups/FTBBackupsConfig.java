@@ -12,6 +12,10 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @deprecated Move over to FTB Libraries' config system
+ */
+@Deprecated(forRemoval = true, since = "21.1.0")
 public class FTBBackupsConfig {
     public static boolean auto;
     public static boolean silent;
