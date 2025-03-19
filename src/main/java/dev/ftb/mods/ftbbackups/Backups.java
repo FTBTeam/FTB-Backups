@@ -11,6 +11,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,8 +23,13 @@ import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * TODO: Logging!
+ */
 public enum Backups {
     INSTANCE;
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(Backups.class);
 
     public final List<Backup> backups = new ArrayList<>();
     public File backupsFolder;
@@ -32,8 +39,8 @@ public enum Backups {
 
     public int currentFile = 0;
     public int totalFiles = 0;
-    public boolean hadPlayersOnline = false;
     private String currentFileName = "";
+    public boolean hadPlayersOnline = false;
 
     public void init(MinecraftServer server) {
         Path dataDir = server.getServerDirectory();
@@ -75,7 +82,7 @@ public enum Backups {
             }
         }
 
-        FTBBackups.LOGGER.info("Backups folder - " + backupsFolder.getAbsolutePath());
+        LOGGER.info("Backups folder - {}", backupsFolder.getAbsolutePath());
         nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
     }
 
@@ -101,7 +108,7 @@ public enum Backups {
             }
         } else if (doingBackup.isRunning() && printFiles) {
             if (currentFile == 0 || currentFile == totalFiles - 1) {
-                FTBBackups.LOGGER.info("[" + currentFile + " | " + (int) ((currentFile / (double) totalFiles) * 100D) + "%]: " + currentFileName);
+                LOGGER.info("[{} | {}%]: {}", currentFile, (int) ((currentFile / (double) totalFiles) * 100D), currentFileName);
             }
 
             if (!FTBBackupsConfig.silent) {
@@ -113,7 +120,7 @@ public enum Backups {
     public void notifyAll(MinecraftServer server, Component component, boolean error) {
         component = component.plainCopy();
         component.getStyle().withColor(TextColor.fromLegacyFormat(error ? ChatFormatting.DARK_RED : ChatFormatting.LIGHT_PURPLE));
-        FTBBackups.LOGGER.info(component.getString());
+        LOGGER.info(component.getString());
         server.getPlayerList().broadcastSystemMessage(component, true);
     }
 
@@ -157,6 +164,10 @@ public enum Backups {
         return true;
     }
 
+    /**
+     * TODO: Wrap in API / Plugin system to allow for different backup providers that accept files / paths and return
+     *       progress / completion status
+     */
     private void createBackup(MinecraftServer server, String customName) {
         File src = server.getWorldPath(LevelResource.ROOT).toFile();
 
@@ -229,7 +240,7 @@ public enum Backups {
                 if (backupsToKeep > 0 && backups.size() > backupsToKeep) {
                     while (backups.size() > backupsToKeep) {
                         Backup backup = backups.remove(0);
-                        FTBBackups.LOGGER.info("Deleting old backup: " + backup.fileId);
+                        LOGGER.info("Deleting old backup: {}", backup.fileId);
                         BackupUtils.delete(backup.getFile());
                     }
                 }
@@ -244,14 +255,14 @@ public enum Backups {
                     while (totalSize + fileSize > freeSpace && !backups.isEmpty()) {
                         Backup backup = backups.remove(0);
                         totalSize -= backup.size;
-                        FTBBackups.LOGGER.info("Deleting backup to free space: " + backup.fileId);
+                        LOGGER.info("Deleting backup to free space: {}", backup.fileId);
                         BackupUtils.delete(backup.getFile());
                     }
                 }
             }
 
             totalFiles = fileMap.size();
-            FTBBackups.LOGGER.info("Backing up " + totalFiles + " files...");
+            LOGGER.info("Backing up {} files...", totalFiles);
             printFiles = true;
 
             if (FTBBackupsConfig.compressionLevel > 0) {
@@ -265,7 +276,7 @@ public enum Backups {
 
                 byte[] buffer = new byte[FTBBackupsConfig.bufferSize];
 
-                FTBBackups.LOGGER.info("Compressing " + totalFiles + " files...");
+                LOGGER.info("Compressing {} files...", totalFiles);
 
                 currentFile = 0;
                 for (Map.Entry<File, String> entry : fileMap.entrySet()) {
@@ -283,7 +294,7 @@ public enum Backups {
                         zos.closeEntry();
                         fis.close();
                     } catch (Exception ex) {
-                        FTBBackups.LOGGER.error("Failed to read file " + entry.getValue() + ": " + ex);
+                        LOGGER.error("Failed to read file {}: {}", entry.getValue(), ex);
                     }
 
                     currentFile++;
@@ -291,7 +302,7 @@ public enum Backups {
 
                 zos.close();
                 fileSize = BackupUtils.getSize(dstFile);
-                FTBBackups.LOGGER.info("Done compressing in " + BackupUtils.getTimeString(System.currentTimeMillis() - start) + " seconds (" + BackupUtils.getSizeString(fileSize) + ")!");
+                LOGGER.info("Done compressing in {} seconds ({})!", BackupUtils.getTimeString(System.currentTimeMillis() - start), BackupUtils.getSizeString(fileSize));
             } else {
                 dstFile = new File(backupsFolder, out.toString());
                 dstFile.mkdirs();
@@ -304,14 +315,14 @@ public enum Backups {
                         File dst1 = new File(dstFile, entry.getValue());
                         BackupUtils.copyFile(file, dst1);
                     } catch (Exception ex) {
-                        FTBBackups.LOGGER.error("Failed to copy file " + entry.getValue() + ": " + ex);
+                        LOGGER.error("Failed to copy file {}: {}", entry.getValue(), ex);
                     }
 
                     currentFile++;
                 }
             }
 
-            FTBBackups.LOGGER.info("Created " + dstFile.getAbsolutePath() + " from " + src.getAbsolutePath());
+            LOGGER.info("Created {} from {}", dstFile.getAbsolutePath(), src.getAbsolutePath());
             success = true;
         } catch (Exception ex) {
             if (!FTBBackupsConfig.silent) {

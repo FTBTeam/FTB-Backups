@@ -1,5 +1,6 @@
 package dev.ftb.mods.ftbbackups;
 
+
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
@@ -10,6 +11,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @deprecated Move over to FTB Libraries' config system
+ */
 public class FTBBackupsConfig {
     public static boolean auto;
     public static boolean silent;

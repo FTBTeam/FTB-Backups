@@ -1,27 +1,21 @@
 modLoader = "javafml"
-loaderVersion = "[1,)"
+loaderVersion = "${loader_version_range}"
 license = "All Rights Reserved"
 
 [[mods]]
 modId = "ftbbackups"
 version = "${version}"
-displayName = "FTB Backups"
+displayName = "FTB Backups 3"
 displayURL = "https://www.curseforge.com/minecraft/mc-mods/ftb-backups"
 logoFile = "logo.png"
 authors = "FTB Team"
 description = '''
-Creates backups of your world'''
+Creates backups of your world
+'''
 
 [[dependencies.ftbbackups]]
 modId = "neoforge"
 mandatory = true
-versionRange = "[21,)"
+versionRange = "${mod_loader_range}"
 ordering = "NONE"
-side = "BOTH"
-
-#[[dependencies.ftbbackups]]
-#modId="minecraft"
-#mandatory = true
-#versionRange = "[1.21,)"
-#ordering = "NONE"
-#side="BOTH"
+side="BOTH"

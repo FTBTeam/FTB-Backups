@@ -1,5 +1,6 @@
 package dev.ftb.mods.ftbbackups;
 
+import dev.ftb.mods.ftbbackups.client.BackupsClient;
 import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
 import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
 import net.minecraft.network.chat.Component;
@@ -19,36 +20,36 @@ import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Mod(FTBBackups.MOD_ID)
 public class FTBBackups {
-    public static final String MOD_ID = "ftbbackups";
-    public static final Logger LOGGER = LogManager.getLogger("FTB Backups 3");
+    public static final String MOD_ID = "ftbbackups3";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FTBBackups.class);
 
     public FTBBackups(IEventBus eventBus, ModContainer container) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            eventBus.addListener(this::clientSetup);
+            eventBus.<FMLClientSetupEvent>addListener(event -> clientSetup(event, eventBus));
         }
-        eventBus.addListener(FTBBackupsNetHandler::init);
 
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
-        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerCommands);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
-        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::worldTick);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::levelTick);
+
+        NeoForge.EVENT_BUS.addListener(this::registerCommands);
+        NeoForge.EVENT_BUS.addListener(this::registerNetwork);
 
         FTBBackupsConfig.register(eventBus, container);
     }
 
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
-    }
-
-    private void clientSetup(FMLClientSetupEvent event) {
-        FTBBackupsClient.init();
+    private void clientSetup(FMLClientSetupEvent event, IEventBus eventBus) {
+        BackupsClient.init(eventBus);
     }
 
     public void serverAboutToStart(ServerAboutToStartEvent event) {
@@ -57,6 +58,11 @@ public class FTBBackups {
 
     public void registerCommands(RegisterCommandsEvent event) {
         BackupCommands.register(event.getDispatcher());
+    }
+
+    public void registerNetwork(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("3");
+        FTBBackupsNetHandler.init(registrar);
     }
 
     public void serverStopping(ServerStoppingEvent event) {
@@ -77,7 +83,11 @@ public class FTBBackups {
         }
     }
 
-    public void worldTick(ServerTickEvent.Post event) {
+    public void levelTick(ServerTickEvent.Post event) {
         Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
+    }
+
+    public static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 }
