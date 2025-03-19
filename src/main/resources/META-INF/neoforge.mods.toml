@@ -3,7 +3,7 @@ loaderVersion = "${loader_version_range}"
 license = "All Rights Reserved"
 
 [[mods]]
-modId = "ftbbackups"
+modId = "ftbbackups3"
 version = "${version}"
 displayName = "FTB Backups 3"
 displayURL = "https://www.curseforge.com/minecraft/mc-mods/ftb-backups"
@@ -13,7 +13,7 @@ description = '''
 Creates backups of your world
 '''
 
-[[dependencies.ftbbackups]]
+[[dependencies.ftbbackups3]]
 modId = "neoforge"
 mandatory = true
 versionRange = "${mod_loader_range}"

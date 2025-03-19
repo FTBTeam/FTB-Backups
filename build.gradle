@@ -80,10 +80,12 @@ configurations {
 }
 
 repositories {
-	mavenLocal()
+	maven { url "https://maven.ftb.dev/releases" } // FTB Mods
+	maven { url "https://maven.architectury.dev" }
 }
 
 dependencies {
+	implementation "dev.ftb.mods:ftb-library-neoforge:${ftb_library_version}"
 }
 
 tasks.register("sourcesJar", Jar) {

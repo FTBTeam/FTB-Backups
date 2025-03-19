@@ -35,6 +35,7 @@ public class FTBBackups {
         if (FMLEnvironment.dist == Dist.CLIENT) {
             eventBus.<FMLClientSetupEvent>addListener(event -> clientSetup(event, eventBus));
         }
+        eventBus.addListener(this::registerNetwork);
 
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
@@ -43,7 +44,6 @@ public class FTBBackups {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::levelTick);
 
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
-        NeoForge.EVENT_BUS.addListener(this::registerNetwork);
 
         FTBBackupsConfig.register(eventBus, container);
     }
