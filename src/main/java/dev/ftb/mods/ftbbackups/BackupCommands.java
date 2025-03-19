@@ -54,7 +54,7 @@ public class BackupCommands {
     }
 
     private static int size(CommandSourceStack source) {
-        long totalSize = Backups.INSTANCE.backups.stream().mapToLong(backup -> backup.size).sum();
+        long totalSize = Backups.INSTANCE.backups.stream().mapToLong(Backup::size).sum();
 
         source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
         source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.total", BackupUtils.getSizeString(totalSize)), true);

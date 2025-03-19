@@ -3,6 +3,7 @@ package dev.ftb.mods.ftbbackups;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
@@ -75,7 +76,7 @@ public enum Backups {
                         json.addProperty("size", BackupUtils.getSize(new File(backupsFolder, json.get("file").getAsString())));
                     }
 
-                    backups.add(new Backup(json));
+                    Backup.CODEC.parse(JsonOps.INSTANCE, json).ifSuccess(backups::add);
                 }
             } catch (Throwable ex) {
                 ex.printStackTrace();
@@ -240,13 +241,13 @@ public enum Backups {
                 if (backupsToKeep > 0 && backups.size() > backupsToKeep) {
                     while (backups.size() > backupsToKeep) {
                         Backup backup = backups.remove(0);
-                        LOGGER.info("Deleting old backup: {}", backup.fileId);
+                        LOGGER.info("Deleting old backup: {}", backup.fileId());
                         BackupUtils.delete(backup.getFile());
                     }
                 }
 
                 for (Backup backup : backups) {
-                    totalSize += backup.size;
+                    totalSize += backup.size();
                 }
 
                 if (fileSize > 0L) {
@@ -254,8 +255,8 @@ public enum Backups {
 
                     while (totalSize + fileSize > freeSpace && !backups.isEmpty()) {
                         Backup backup = backups.remove(0);
-                        totalSize -= backup.size;
-                        LOGGER.info("Deleting backup to free space: {}", backup.fileId);
+                        totalSize -= backup.size();
+                        LOGGER.info("Deleting backup to free space: {}", backup.fileId());
                         BackupUtils.delete(backup.getFile());
                     }
                 }
@@ -343,7 +344,7 @@ public enum Backups {
         JsonArray array = new JsonArray();
 
         for (Backup backup1 : backups) {
-            array.add(backup1.toJsonObject());
+            Backup.CODEC.encodeStart(JsonOps.INSTANCE, backup1).ifSuccess(array::add);
         }
 
         BackupUtils.toJson(new File(server.getServerDirectory().toFile(), "local/ftbutilities/backups.json"), array, true);
@@ -356,7 +357,7 @@ public enum Backups {
                 long totalSize = 0L;
 
                 for (Backup backup1 : backups) {
-                    totalSize += backup1.size;
+                    totalSize += backup1.size();
                 }
 
                 String sizeB = BackupUtils.getSizeString(fileSize);
@@ -386,7 +387,7 @@ public enum Backups {
         int i = 0;
 
         for (Backup b : backups) {
-            i = Math.max(i, b.index);
+            i = Math.max(i, b.index());
         }
 
         return i;

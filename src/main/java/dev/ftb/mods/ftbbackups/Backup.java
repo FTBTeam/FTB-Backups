@@ -1,37 +1,18 @@
 package dev.ftb.mods.ftbbackups;
 
-import com.google.gson.JsonObject;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.io.File;
 
-public class Backup implements Comparable<Backup> {
-    public final long time;
-    public final String fileId;
-    public final int index;
-    public final boolean success;
-    public final long size;
-
-    public Backup(long t, String f, int i, boolean s, long fs) {
-        time = t;
-        fileId = f;
-        index = i;
-        success = s;
-        size = fs;
-    }
-
-    public Backup(JsonObject o) {
-        this(o.get("time").getAsLong(), o.get("file").getAsString(), o.get("index").getAsInt(), o.get("success").getAsBoolean(), o.get("size").getAsLong());
-    }
-
-    public JsonObject toJsonObject() {
-        JsonObject o = new JsonObject();
-        o.addProperty("time", time);
-        o.addProperty("file", fileId);
-        o.addProperty("index", index);
-        o.addProperty("success", success);
-        o.addProperty("size", size);
-        return o;
-    }
+public record Backup(long time, String fileId, int index, boolean success, long size) implements Comparable<Backup> {
+    public static final Codec<Backup> CODEC = RecordCodecBuilder.create(builder -> builder.group(
+            Codec.LONG.fieldOf("time").forGetter(Backup::time),
+            Codec.STRING.fieldOf("file").forGetter(Backup::fileId),
+            Codec.INT.fieldOf("index").forGetter(Backup::index),
+            Codec.BOOL.fieldOf("success").forGetter(Backup::success),
+            Codec.LONG.fieldOf("size").forGetter(Backup::size)
+    ).apply(builder, Backup::new));
 
     public int hashCode() {
         return Long.hashCode(time);
