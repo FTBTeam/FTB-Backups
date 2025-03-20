@@ -15,7 +15,6 @@ import net.minecraft.world.level.storage.LevelResource;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 
 public class BackupCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -59,7 +58,7 @@ public class BackupCommands {
     }
 
     private static int time(CommandSourceStack source) {
-        Duration d = Duration.between(Instant.now(), Instant.ofEpochMilli(Backups.INSTANCE.nextBackup));
+        Duration d = Duration.between(Instant.now(), Instant.ofEpochMilli(Backups.INSTANCE.nextBackupTime));
         var s = String.format("%02d:%02d:%02d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart());
 
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.timer", s), true);
@@ -83,7 +82,7 @@ public class BackupCommands {
 
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
-        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), Backups.INSTANCE.backupsFolder.toFile().getFreeSpace()))), true);
 
         return 1;
     }

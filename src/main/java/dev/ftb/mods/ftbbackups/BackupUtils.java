@@ -13,6 +13,8 @@ import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -172,21 +174,24 @@ public class BackupUtils {
         }
     }
 
-    public static void toJson(File file, @Nullable JsonElement element, boolean prettyPrinting) {
-        try (OutputStreamWriter output = new OutputStreamWriter(new FileOutputStream(newFile(file)), StandardCharsets.UTF_8);
-             BufferedWriter writer = new BufferedWriter(output)) {
-            toJson(writer, element, prettyPrinting);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+    public static void toJson(Path jsonFile, @Nullable JsonElement element, boolean prettyPrinting) {
+        try {
+            Files.createDirectories(jsonFile.getParent());
+            try (OutputStreamWriter output = new OutputStreamWriter(new FileOutputStream(jsonFile.toFile()), StandardCharsets.UTF_8);
+                 BufferedWriter writer = new BufferedWriter(output)) {
+                toJson(writer, element, prettyPrinting);
+            }
+        } catch (IOException e) {
+            Backups.LOGGER.error("could not write JSON file {}: {} / {}", jsonFile, e.getClass(), e.getMessage());
         }
     }
 
-    public static JsonElement readJson(File file) {
-        if (!file.exists()) {
+    public static JsonElement readJson(Path jsonFile) {
+        if (!Files.exists(jsonFile)) {
             return JsonNull.INSTANCE;
         }
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(jsonFile.toFile()), StandardCharsets.UTF_8))) {
             JsonReader jsonReader = new JsonReader(reader);
             jsonReader.setLenient(true);
             JsonElement element = Streams.parse(jsonReader);
@@ -197,7 +202,7 @@ public class BackupUtils {
 
             return element;
         } catch (Exception ex) {
-            return null;
+            return JsonNull.INSTANCE;
         }
     }
 

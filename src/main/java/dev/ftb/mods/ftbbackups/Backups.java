@@ -1,12 +1,11 @@
 package dev.ftb.mods.ftbbackups;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import dev.ftb.mods.ftbbackups.api.BackupEvent;
 import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.MinecraftServer;
@@ -22,8 +21,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -34,12 +37,15 @@ import java.util.zip.ZipOutputStream;
 public enum Backups {
     INSTANCE;
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
+
     public static final Logger LOGGER = LoggerFactory.getLogger(Backups.class);
+    public static final String BACKUPS_JSON_FILE = "backups.json";
 
     public final List<Backup> backups = new ArrayList<>();
-    public File backupsFolder;
-    public long nextBackup = -1L;
-    public BackupStatus doingBackup = BackupStatus.NONE;
+    public Path backupsFolder;
+    public long nextBackupTime = -1L;
+    public BackupStatus backupStatus = BackupStatus.NONE;
     public boolean printFiles = false;
 
     public int currentFile = 0;
@@ -48,73 +54,54 @@ public enum Backups {
     public boolean hadPlayersOnline = false;
 
     public void init(MinecraftServer server) {
-        Path dataDir = server.getServerDirectory();
         String folder = FTBBackupsConfig.FOLDER.get();
         backupsFolder = folder.trim().isEmpty() ?
-                FMLPaths.GAMEDIR.get().resolve("backups").toFile() :
-                new File(folder);
+                FMLPaths.GAMEDIR.get().resolve("backups") :
+                Paths.get(folder);
 
         try {
-            backupsFolder = backupsFolder.getCanonicalFile();
+            backupsFolder = backupsFolder.toRealPath();
         } catch (Exception ignored) {
         }
 
-        doingBackup = BackupStatus.NONE;
+        backupStatus = BackupStatus.NONE;
         backups.clear();
 
-        File file = new File(dataDir.toFile(), "local/ftbutilities/backups.json");
+        Path backupsIndexFile = indexJsonPath(server);
+        JsonElement element = BackupUtils.readJson(backupsIndexFile);
+        Backup.LIST_CODEC.parse(JsonOps.INSTANCE, element)
+                .resultOrPartial(err -> LOGGER.warn("can't parse backups index {}", backupsIndexFile))
+                .ifPresent(backups::addAll);
 
-        if (!file.exists()) {
-            File oldFile = new File(backupsFolder, "backups.json");
+        LOGGER.info("Backups will be written to: {}", backupsFolder);
+        nextBackupTime = System.currentTimeMillis() + FTBBackupsConfig.getBackupTimerMillis();
+    }
 
-            if (oldFile.exists()) {
-                oldFile.renameTo(file);
-            }
-        }
-
-        JsonElement element = BackupUtils.readJson(file);
-
-        if (element != null && element.isJsonArray()) {
-            try {
-                for (JsonElement e : element.getAsJsonArray()) {
-                    JsonObject json = e.getAsJsonObject();
-
-                    if (!json.has("size")) {
-                        json.addProperty("size", BackupUtils.getSize(new File(backupsFolder, json.get("file").getAsString())));
-                    }
-
-                    Backup.CODEC.parse(JsonOps.INSTANCE, json).ifSuccess(backups::add);
-                }
-            } catch (Throwable ex) {
-                ex.printStackTrace();
-            }
-        }
-
-        LOGGER.info("Backups folder - {}", backupsFolder.getAbsolutePath());
-        nextBackup = System.currentTimeMillis() + FTBBackupsConfig.getBackupTimerMillis();
+    private static Path indexJsonPath(MinecraftServer server) {
+        return server.getServerDirectory().resolve(FTBBackups.MOD_ID).resolve(BACKUPS_JSON_FILE);
     }
 
     public void tick(MinecraftServer server, long now) {
-        if (nextBackup > 0L && nextBackup <= now) {
+        if (nextBackupTime > 0L && nextBackupTime <= now) {
             if (!FTBBackupsConfig.ONLY_IF_PLAYERS_ONLINE.get() || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty()) {
                 hadPlayersOnline = false;
                 run(server, true, Component.translatable("Server"), "");
             }
         }
 
-        if (doingBackup.isDone()) {
-            doingBackup = BackupStatus.NONE;
+        if (backupStatus.isDone()) {
+            backupStatus = BackupStatus.NONE;
 
-            for (ServerLevel world : server.getAllLevels()) {
-                if (world != null) {
-                    world.noSave = false;
+            for (ServerLevel level : server.getAllLevels()) {
+                if (level != null) {
+                    level.noSave = false;
                 }
             }
 
             if (!FTBBackupsConfig.SILENT.get()) {
                 PacketDistributor.sendToAllPlayers(BackupProgressPacket.reset());
             }
-        } else if (doingBackup.isRunning() && printFiles) {
+        } else if (backupStatus.isRunning() && printFiles) {
             if (currentFile == 0 || currentFile == totalFiles - 1) {
                 LOGGER.info("[{} | {}%]: {}", currentFile, (int) ((currentFile / (double) totalFiles) * 100D), currentFileName);
             }
@@ -133,7 +120,7 @@ public enum Backups {
     }
 
     public boolean run(MinecraftServer server, boolean auto, Component name, String customName) {
-        if (doingBackup.isRunningOrDone()) {
+        if (backupStatus.isRunningOrDone()) {
             return false;
         }
 
@@ -142,32 +129,27 @@ public enum Backups {
         }
 
         notifyAll(server, Component.translatable("ftbbackups3.lang.start", name), false);
-        nextBackup = System.currentTimeMillis() + FTBBackupsConfig.getBackupTimerMillis();
+        nextBackupTime = System.currentTimeMillis() + FTBBackupsConfig.getBackupTimerMillis();
 
-        for (ServerLevel world : server.getAllLevels()) {
-            if (world != null) {
-                world.noSave = true;
+        for (ServerLevel level : server.getAllLevels()) {
+            if (level != null) {
+                level.noSave = true;
             }
         }
 
-        doingBackup = BackupStatus.RUNNING;
+        backupStatus = BackupStatus.RUNNING;
         server.getPlayerList().saveAll();
 
-        new Thread(() -> {
+        CompletableFuture.runAsync(() -> {
             try {
-                try {
-                    createBackup(server, customName);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    notifyAll(server, Component.translatable("ftbbackups3.lang.saving_failed"), true);
-                }
+                createBackup(server, customName);
             } catch (Exception ex) {
+                LOGGER.error("backup creation failed: {} / {}", ex.getClass(), ex.getMessage());
                 notifyAll(server, Component.translatable("ftbbackups3.lang.saving_failed"), true);
-                ex.printStackTrace();
             }
-
-            doingBackup = BackupStatus.DONE;
-        }).start();
+        }).thenRun(() -> {
+            backupStatus = BackupStatus.DONE;
+        });
 
         return true;
     }
@@ -180,42 +162,35 @@ public enum Backups {
         File src = server.getWorldPath(LevelResource.ROOT).toFile();
 
         try {
-            src = src.getCanonicalFile();
-        } catch (Exception ex) {
+            src = src.getAbsoluteFile();
+        } catch (Exception ignored) {
         }
 
-        Calendar time = Calendar.getInstance();
+        long now = Util.getEpochMillis();
         File dstFile;
         boolean success = false;
-        StringBuilder out = new StringBuilder();
 
-        if (customName.isEmpty()) {
-            appendNum(out, time.get(Calendar.YEAR), '-');
-            appendNum(out, time.get(Calendar.MONTH) + 1, '-');
-            appendNum(out, time.get(Calendar.DAY_OF_MONTH), '-');
-            appendNum(out, time.get(Calendar.HOUR_OF_DAY), '-');
-            appendNum(out, time.get(Calendar.MINUTE), '-');
-            appendNum(out, time.get(Calendar.SECOND), '\0');
-        } else {
-            out.append(customName);
-        }
+        String backupFileName = customName.isEmpty() ? DATE_TIME_FORMATTER.format(LocalDateTime.now()) : customName;
 
         Exception error = null;
         long fileSize = 0L;
 
         try {
+            // maps files on the system to path within the archive file being created
             LinkedHashMap<File, String> fileMap = new LinkedHashMap<>();
-            String mcdir = server.getServerDirectory().getFileSystem().toString();
+            String mcdir = server.getServerDirectory().toRealPath().toString() + File.separator;
 
             Consumer<File> consumer = file0 -> {
                 for (File file : BackupUtils.listTree(file0)) {
                     String s1 = file.getAbsolutePath().replace(mcdir, "");
 
+                    boolean absolute = false;
                     if (s1.startsWith(File.separator)) {
                         s1 = s1.substring(File.separator.length());
+                        absolute = true;
                     }
 
-                    fileMap.put(file, "_extra_" + File.separator + s1);
+                    fileMap.put(file.getAbsoluteFile(), (absolute ? "_extra_absolute_" : "_extra_relative_") + File.separator + s1);
                 }
             };
 
@@ -231,7 +206,7 @@ public enum Backups {
                 }
 
                 String filePath = file.getAbsolutePath();
-                fileMap.put(file, src.getName() + File.separator + filePath.substring(src.getAbsolutePath().length() + 1));
+                fileMap.put(file.getCanonicalFile(), src.getName() + File.separator + filePath.substring(src.getAbsolutePath().length() + 1));
             }
 
             for (Map.Entry<File, String> entry : fileMap.entrySet()) {
@@ -258,7 +233,7 @@ public enum Backups {
                 }
 
                 if (fileSize > 0L) {
-                    long freeSpace = Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), backupsFolder.getFreeSpace());
+                    long freeSpace = Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), backupsFolder.toFile().getFreeSpace());
 
                     while (totalSize + fileSize > freeSpace && !backups.isEmpty()) {
                         Backup backup = backups.remove(0);
@@ -274,8 +249,7 @@ public enum Backups {
             printFiles = true;
 
             if (FTBBackupsConfig.COMPRESSION_LEVEL.get() > 0) {
-                out.append(".zip");
-                dstFile = BackupUtils.newFile(new File(backupsFolder, out.toString()));
+                dstFile = BackupUtils.newFile(new File(backupsFolder.toFile(), backupFileName + ".zip"));
 
                 long start = System.currentTimeMillis();
 
@@ -312,7 +286,7 @@ public enum Backups {
                 fileSize = BackupUtils.getSize(dstFile);
                 LOGGER.info("Done compressing in {} ms ({})!", System.currentTimeMillis() - start, BackupUtils.getSizeString(fileSize));
             } else {
-                dstFile = new File(backupsFolder, out.toString());
+                dstFile = new File(backupsFolder.toFile(), backupFileName);
                 dstFile.mkdirs();
 
                 currentFile = 0;
@@ -344,20 +318,15 @@ public enum Backups {
 
         printFiles = false;
 
-        Backup backup = new Backup(time.getTimeInMillis(), out.toString().replace('\\', '/'), getLastIndex() + 1, success, fileSize);
+        Backup backup = new Backup(now, backupFileName.replace('\\', '/'), getLastIndex() + 1, success, fileSize);
         backups.add(backup);
         NeoForge.EVENT_BUS.post(new BackupEvent.Post(backup, error));
 
-        JsonArray array = new JsonArray();
-
-        for (Backup backup1 : backups) {
-            Backup.CODEC.encodeStart(JsonOps.INSTANCE, backup1).ifSuccess(array::add);
-        }
-
-        BackupUtils.toJson(new File(server.getServerDirectory().toFile(), "local/ftbutilities/backups.json"), array, true);
+        Backup.LIST_CODEC.encodeStart(JsonOps.INSTANCE, backups)
+                .ifSuccess(json -> BackupUtils.toJson(indexJsonPath(server), json, true));
 
         if (error == null && !FTBBackupsConfig.SILENT.get()) {
-            Duration d = Duration.ZERO.plusMillis(System.currentTimeMillis() - time.getTimeInMillis());
+            Duration d = Duration.ZERO.plusMillis(Util.getEpochMillis() - now);
             String timeString = String.format("%d.%03ds", d.toSeconds(), d.toMillisPart());
             Component component;
 
