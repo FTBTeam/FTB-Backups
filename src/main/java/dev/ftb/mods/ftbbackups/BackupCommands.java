@@ -1,12 +1,21 @@
 package dev.ftb.mods.ftbbackups;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import dev.architectury.networking.NetworkManager;
+import dev.ftb.mods.ftblibrary.net.EditConfigPacket;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 
 public class BackupCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -15,39 +24,55 @@ public class BackupCommands {
                         .executes(ctx -> time(ctx.getSource()))
                 )
                 .then(Commands.literal("start")
-                        .requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
+                        .requires(BackupCommands::isAdmin)
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .executes(ctx -> start(ctx.getSource(), StringArgumentType.getString(ctx, "name")))
                         )
                         .executes(ctx -> start(ctx.getSource(), ""))
                 )
                 .then(Commands.literal("size")
-                        .requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
+                        .requires(BackupCommands::isAdmin)
                         .executes(ctx -> size(ctx.getSource()))
                 )
                 .then(Commands.literal("status")
-                        .requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
+                        .requires(BackupCommands::isAdmin)
                         .executes(ctx -> status(ctx.getSource()))
                 )
                 .then(Commands.literal("reset")
-                        .requires(cs -> cs.getServer().isSingleplayer() || cs.hasPermission(3))
+                        .requires(BackupCommands::isAdmin)
                         .executes(ctx -> resetState(ctx.getSource()))
+                )
+                .then(Commands.literal("serverconfig")
+                        .requires(BackupCommands::isAdmin)
+                        .executes(ctx -> editServerConfig(ctx.getSource()))
                 )
         );
     }
 
+    private static boolean isAdmin(CommandSourceStack cs) {
+        return cs.getServer().isSingleplayer() || cs.hasPermission(3);
+    }
+
+    private static int editServerConfig(CommandSourceStack source) throws CommandSyntaxException {
+        NetworkManager.sendToPlayer(source.getPlayerOrException(), new EditConfigPacket(FTBBackupsConfig.KEY));
+        return Command.SINGLE_SUCCESS;
+    }
+
     private static int time(CommandSourceStack source) {
-        source.sendSuccess(() -> Component.translatable("ftbbackups.lang.timer", BackupUtils.getTimeString(Backups.INSTANCE.nextBackup - System.currentTimeMillis())), true);
+        Duration d = Duration.between(Instant.now(), Instant.ofEpochMilli(Backups.INSTANCE.nextBackup));
+        var s = String.format("%02d:%02d:%02d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart());
+
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.timer", s), true);
         return 1;
     }
 
     private static int start(CommandSourceStack source, String customName) {
         if (Backups.INSTANCE.run(source.getServer(), false, source.getDisplayName(), customName)) {
             for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
-                player.sendSystemMessage(Component.translatable("ftbbackups.lang.manual_launch", source.getDisplayName()));
+                player.sendSystemMessage(Component.translatable("ftbbackups3.lang.manual_launch", source.getDisplayName()));
             }
         } else {
-            source.sendSuccess(() -> Component.translatable("ftbbackups.lang.already_running"), true);
+            source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.already_running"), true);
         }
 
         return 1;
@@ -56,24 +81,19 @@ public class BackupCommands {
     private static int size(CommandSourceStack source) {
         long totalSize = Backups.INSTANCE.backups.stream().mapToLong(Backup::size).sum();
 
-        source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
-        source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
-        source.sendSuccess(() -> Component.translatable("ftbbackups.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.maxTotalSize, Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), Backups.INSTANCE.backupsFolder.getFreeSpace()))), true);
 
         return 1;
     }
 
-    /**
-     * @deprecated Either remove or improve this
-     */
-    @Deprecated(forRemoval = true, since = "21.1.0")
     private static int status(CommandSourceStack source) {
         source.getServer().getAllLevels().forEach(level -> {
             if (level != null) {
-                //[Dev: Current status for ServerLevel[world]: NO SAVE !!] x3
-                //level.dimension().toString() - ResourceKey[minecraft:dimension / minecraft:overworld]
-                //level.toSting() - ServerLevel[New World]
-                source.sendSuccess(() -> Component.literal("Current status for " + level.toString() + ": " + (!level.noSave ? "NO SAVE !!" : "Autosave")), true);
+                Component enabled = Component.translatable("ftbbackups3.lang.autosave." + (level.noSave() ? "disabled" : "enabled")).withStyle(ChatFormatting.AQUA);
+                Component dim = Component.literal(level.dimension().location().toString()).withStyle(ChatFormatting.YELLOW);
+                source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.autosave_status", dim, enabled), true);
             }
         });
 

@@ -1,5 +1,6 @@
-package dev.ftb.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups.api;
 
+import dev.ftb.mods.ftbbackups.Backup;
 import net.neoforged.bus.api.Event;
 
 import javax.annotation.Nullable;

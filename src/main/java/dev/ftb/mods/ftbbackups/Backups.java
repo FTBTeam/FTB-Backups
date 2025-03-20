@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
+import dev.ftb.mods.ftbbackups.api.BackupEvent;
+import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
@@ -12,6 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
@@ -45,11 +49,14 @@ public enum Backups {
 
     public void init(MinecraftServer server) {
         Path dataDir = server.getServerDirectory();
-        backupsFolder = FTBBackupsConfig.folder.trim().isEmpty() ? FMLPaths.GAMEDIR.get().resolve("backups").toFile() : new File(FTBBackupsConfig.folder);
+        String folder = FTBBackupsConfig.FOLDER.get();
+        backupsFolder = folder.trim().isEmpty() ?
+                FMLPaths.GAMEDIR.get().resolve("backups").toFile() :
+                new File(folder);
 
         try {
             backupsFolder = backupsFolder.getCanonicalFile();
-        } catch (Exception ex) {
+        } catch (Exception ignored) {
         }
 
         doingBackup = BackupStatus.NONE;
@@ -84,12 +91,12 @@ public enum Backups {
         }
 
         LOGGER.info("Backups folder - {}", backupsFolder.getAbsolutePath());
-        nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
+        nextBackup = System.currentTimeMillis() + FTBBackupsConfig.getBackupTimerMillis();
     }
 
     public void tick(MinecraftServer server, long now) {
         if (nextBackup > 0L && nextBackup <= now) {
-            if (!FTBBackupsConfig.onlyIfPlayersOnline || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty()) {
+            if (!FTBBackupsConfig.ONLY_IF_PLAYERS_ONLINE.get() || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty()) {
                 hadPlayersOnline = false;
                 run(server, true, Component.translatable("Server"), "");
             }
@@ -104,16 +111,16 @@ public enum Backups {
                 }
             }
 
-            if (!FTBBackupsConfig.silent) {
-                //TODO: Fix FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(0, 0));
+            if (!FTBBackupsConfig.SILENT.get()) {
+                PacketDistributor.sendToAllPlayers(BackupProgressPacket.reset());
             }
         } else if (doingBackup.isRunning() && printFiles) {
             if (currentFile == 0 || currentFile == totalFiles - 1) {
                 LOGGER.info("[{} | {}%]: {}", currentFile, (int) ((currentFile / (double) totalFiles) * 100D), currentFileName);
             }
 
-            if (!FTBBackupsConfig.silent) {
-                //TODO: Fix FTBBackupsNetHandler.MAIN.send(PacketDistributor.ALL.noArg(), new BackupProgressPacket(currentFile, totalFiles));
+            if (!FTBBackupsConfig.SILENT.get()) {
+                PacketDistributor.sendToAllPlayers(BackupProgressPacket.create());
             }
         }
     }
@@ -130,12 +137,12 @@ public enum Backups {
             return false;
         }
 
-        if (auto && !FTBBackupsConfig.auto) {
+        if (auto && !FTBBackupsConfig.AUTO.get()) {
             return false;
         }
 
-        notifyAll(server, Component.translatable("ftbbackups.lang.start", name), false);
-        nextBackup = System.currentTimeMillis() + FTBBackupsConfig.backupTimer;
+        notifyAll(server, Component.translatable("ftbbackups3.lang.start", name), false);
+        nextBackup = System.currentTimeMillis() + FTBBackupsConfig.getBackupTimerMillis();
 
         for (ServerLevel world : server.getAllLevels()) {
             if (world != null) {
@@ -152,10 +159,10 @@ public enum Backups {
                     createBackup(server, customName);
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    notifyAll(server, Component.translatable("ftbbackups.lang.saving_failed"), true);
+                    notifyAll(server, Component.translatable("ftbbackups3.lang.saving_failed"), true);
                 }
             } catch (Exception ex) {
-                notifyAll(server, Component.translatable("ftbbackups.lang.saving_failed"), true);
+                notifyAll(server, Component.translatable("ftbbackups3.lang.saving_failed"), true);
                 ex.printStackTrace();
             }
 
@@ -212,7 +219,7 @@ public enum Backups {
                 }
             };
 
-            for (String s : FTBBackupsConfig.extraFiles) {
+            for (String s : FTBBackupsConfig.EXTRA_FILES.get()) {
                 consumer.accept(new File(s));
             }
 
@@ -236,7 +243,7 @@ public enum Backups {
             if (!backups.isEmpty()) {
                 backups.sort(null);
 
-                int backupsToKeep = FTBBackupsConfig.backupsToKeep - 1;
+                int backupsToKeep = FTBBackupsConfig.BACKUPS_TO_KEEP.get() - 1;
 
                 if (backupsToKeep > 0 && backups.size() > backupsToKeep) {
                     while (backups.size() > backupsToKeep) {
@@ -251,7 +258,7 @@ public enum Backups {
                 }
 
                 if (fileSize > 0L) {
-                    long freeSpace = Math.min(FTBBackupsConfig.maxTotalSize, backupsFolder.getFreeSpace());
+                    long freeSpace = Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), backupsFolder.getFreeSpace());
 
                     while (totalSize + fileSize > freeSpace && !backups.isEmpty()) {
                         Backup backup = backups.remove(0);
@@ -266,16 +273,16 @@ public enum Backups {
             LOGGER.info("Backing up {} files...", totalFiles);
             printFiles = true;
 
-            if (FTBBackupsConfig.compressionLevel > 0) {
+            if (FTBBackupsConfig.COMPRESSION_LEVEL.get() > 0) {
                 out.append(".zip");
                 dstFile = BackupUtils.newFile(new File(backupsFolder, out.toString()));
 
                 long start = System.currentTimeMillis();
 
                 ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(dstFile));
-                zos.setLevel(FTBBackupsConfig.compressionLevel);
+                zos.setLevel(FTBBackupsConfig.COMPRESSION_LEVEL.get());
 
-                byte[] buffer = new byte[FTBBackupsConfig.bufferSize];
+                byte[] buffer = new byte[FTBBackupsConfig.BUFFER_SIZE.get()];
 
                 LOGGER.info("Compressing {} files...", totalFiles);
 
@@ -303,7 +310,7 @@ public enum Backups {
 
                 zos.close();
                 fileSize = BackupUtils.getSize(dstFile);
-                LOGGER.info("Done compressing in {} seconds ({})!", BackupUtils.getTimeString(System.currentTimeMillis() - start), BackupUtils.getSizeString(fileSize));
+                LOGGER.info("Done compressing in {} ms ({})!", System.currentTimeMillis() - start, BackupUtils.getSizeString(fileSize));
             } else {
                 dstFile = new File(backupsFolder, out.toString());
                 dstFile.mkdirs();
@@ -326,9 +333,9 @@ public enum Backups {
             LOGGER.info("Created {} from {}", dstFile.getAbsolutePath(), src.getAbsolutePath());
             success = true;
         } catch (Exception ex) {
-            if (!FTBBackupsConfig.silent) {
+            if (!FTBBackupsConfig.SILENT.get()) {
                 String errorName = ex.getClass().getName();
-                notifyAll(server, Component.translatable("ftbbackups.lang.fail", errorName), true);
+                notifyAll(server, Component.translatable("ftbbackups3.lang.fail", errorName), true);
             }
 
             ex.printStackTrace();
@@ -349,11 +356,12 @@ public enum Backups {
 
         BackupUtils.toJson(new File(server.getServerDirectory().toFile(), "local/ftbutilities/backups.json"), array, true);
 
-        if (error == null && !FTBBackupsConfig.silent) {
-            String timeString = BackupUtils.getTimeString(System.currentTimeMillis() - time.getTimeInMillis());
+        if (error == null && !FTBBackupsConfig.SILENT.get()) {
+            Duration d = Duration.ZERO.plusMillis(System.currentTimeMillis() - time.getTimeInMillis());
+            String timeString = String.format("%d.%03ds", d.toSeconds(), d.toMillisPart());
             Component component;
 
-            if (FTBBackupsConfig.displayFileSize) {
+            if (FTBBackupsConfig.DISPLAY_FILE_SIZE.get()) {
                 long totalSize = 0L;
 
                 for (Backup backup1 : backups) {
@@ -363,9 +371,9 @@ public enum Backups {
                 String sizeB = BackupUtils.getSizeString(fileSize);
                 String sizeT = BackupUtils.getSizeString(totalSize);
                 String sizeString = sizeB.equals(sizeT) ? sizeB : (sizeB + " | " + sizeT);
-                component = Component.translatable("ftbbackups.lang.end_2", timeString, sizeString);
+                component = Component.translatable("ftbbackups3.lang.end_2", timeString, sizeString);
             } else {
-                component = Component.translatable("ftbbackups.lang.end_1", timeString);
+                component = Component.translatable("ftbbackups3.lang.end_1", timeString);
             }
 
             component.getStyle().withColor(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE));

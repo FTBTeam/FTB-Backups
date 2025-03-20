@@ -3,6 +3,7 @@ package dev.ftb.mods.ftbbackups;
 import dev.ftb.mods.ftbbackups.client.BackupsClient;
 import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
 import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
+import dev.ftb.mods.ftblibrary.config.manager.ConfigManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -37,6 +38,8 @@ public class FTBBackups {
         }
         eventBus.addListener(this::registerNetwork);
 
+        ConfigManager.getInstance().registerServerConfig(FTBBackupsConfig.CONFIG, MOD_ID + ".general", true, FTBBackupsConfig::onConfigChanged);
+
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
@@ -44,8 +47,6 @@ public class FTBBackups {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::levelTick);
 
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
-
-        FTBBackupsConfig.register(eventBus, container);
     }
 
     private void clientSetup(FMLClientSetupEvent event, IEventBus eventBus) {
@@ -66,7 +67,7 @@ public class FTBBackups {
     }
 
     public void serverStopping(ServerStoppingEvent event) {
-        if (FTBBackupsConfig.forceOnShutdown) {
+        if (FTBBackupsConfig.FORCE_ON_SHUTDOWN.get()) {
             Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
         }
     }

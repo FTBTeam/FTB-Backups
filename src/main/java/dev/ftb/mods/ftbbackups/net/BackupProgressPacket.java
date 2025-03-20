@@ -2,7 +2,7 @@ package dev.ftb.mods.ftbbackups.net;
 
 import dev.ftb.mods.ftbbackups.Backups;
 import dev.ftb.mods.ftbbackups.FTBBackups;
-import dev.ftb.mods.ftbbackups.FTBBackupsClient;
+import dev.ftb.mods.ftbbackups.client.BackupsClient;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -18,12 +18,18 @@ public record BackupProgressPacket(int current, int total) implements CustomPack
             BackupProgressPacket::new
     );
 
+    private static final BackupProgressPacket RESET_PACKET = new BackupProgressPacket(0, 0);
+
     public static void handler(BackupProgressPacket message, IPayloadContext context) {
-        FTBBackupsClient.setBackupProgress(message.current, message.total);
+        BackupsClient.setBackupProgress(message.current, message.total);
     }
 
     public static CustomPacketPayload create() {
         return new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles);
+    }
+
+    public static CustomPacketPayload reset() {
+        return RESET_PACKET;
     }
 
     @Override
