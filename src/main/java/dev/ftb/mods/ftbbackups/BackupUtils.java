@@ -8,15 +8,18 @@ import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
+import org.apache.commons.lang3.mutable.MutableLong;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 public class BackupUtils {
     public static final long KB = 1024L;
@@ -29,25 +32,39 @@ public class BackupUtils {
     public static final double GB_D = MB_D * 1024D;
     public static final double TB_D = GB_D * 1024D;
 
-    public static long getSize(File file) {
-        if (!file.exists()) {
-            return 0L;
-        } else if (file.isFile()) {
-            return file.length();
-        } else if (file.isDirectory()) {
-            long length = 0L;
-            File[] f1 = file.listFiles();
-            if (f1 != null && f1.length > 0) {
-                for (File aF1 : f1) {
-                    length += getSize(aF1);
+    public static long getSize(Path path) {
+        final AtomicLong size = new AtomicLong(0);
+
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    size.addAndGet(attrs.size());
+                    return FileVisitResult.CONTINUE;
                 }
-            }
-            return length;
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    Backups.LOGGER.error("getSize: skipped: {} ({})", file, exc);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    if (exc != null) {
+                        Backups.LOGGER.error("getSize: had trouble traversing dir: {} ({})", dir, exc);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new AssertionError("walkFileTree will not throw IOException if the FileVisitor does not");
         }
-        return 0L;
+
+        return size.get();
     }
 
-    public static String getSizeString(double b) {
+    public static String formatSizeString(double b) {
         if (b >= TB_D) {
             return String.format("%.1fTB", b / TB_D);
         } else if (b >= GB_D) {
@@ -61,93 +78,11 @@ public class BackupUtils {
         return ((long) b) + "B";
     }
 
-    public static String getSizeString(File file) {
-        return getSizeString(getSize(file));
+    public static String formatSizeString(Path file) {
+        return formatSizeString(getSize(file));
     }
 
-    public static File newFile(File file) {
-        if (!file.exists()) {
-            try {
-                File parent = file.getParentFile();
-                if (!parent.exists()) {
-                    parent.mkdirs();
-                }
-                file.createNewFile();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        return file;
-    }
-
-    public static List<File> listTree(File file) {
-        List<File> l = new ArrayList<>();
-        listTree0(l, file);
-        return l;
-    }
-
-    public static void listTree0(List<File> list, File file) {
-        if (file.isDirectory()) {
-            File[] fl = file.listFiles();
-
-            if (fl != null && fl.length > 0) {
-                for (File aFl : fl) {
-                    listTree0(list, aFl);
-                }
-            }
-        } else if (file.isFile()) {
-            list.add(file);
-        }
-    }
-
-    /**
-     * @deprecated This can likely be replaced with {@link org.apache.commons.io.FileUtils#copyFile(File, File)}
-     */
-    @Deprecated
-    public static void copyFile(File src, File dst) throws Exception {
-        if (src.exists() && !src.equals(dst)) {
-            if (src.isDirectory() && dst.isDirectory()) {
-                for (File f : listTree(src)) {
-                    File dst1 = new File(dst.getAbsolutePath() + File.separatorChar + (f.getAbsolutePath().replace(src.getAbsolutePath(), "")));
-                    copyFile(f, dst1);
-                }
-            } else {
-                dst = newFile(dst);
-
-                try (FileInputStream fis = new FileInputStream(src);
-                     FileOutputStream fos = new FileOutputStream(dst);
-                     FileChannel srcC = fis.getChannel();
-                     FileChannel dstC = fos.getChannel()) {
-                    dstC.transferFrom(srcC, 0L, srcC.size());
-                }
-            }
-        }
-    }
-
-    /**
-     * @deprecated This can likely be replaced with {@link org.apache.commons.io.FileUtils#delete(File)}
-     */
-    @Deprecated
-    public static boolean delete(File file) {
-        if (!file.exists()) {
-            return false;
-        } else if (file.isFile()) {
-            return file.delete();
-        }
-
-        String[] files = file.list();
-
-        if (files != null) {
-            for (String s : files) {
-                delete(new File(file, s));
-            }
-        }
-
-        return file.delete();
-    }
-
-    public static void toJson(Writer writer, @Nullable JsonElement element, boolean prettyPrinting) {
+    public static void writeJson(Writer writer, @Nullable JsonElement element, boolean prettyPrinting) {
         if (element == null || element.isJsonNull()) {
             try {
                 writer.write("null");
@@ -174,12 +109,12 @@ public class BackupUtils {
         }
     }
 
-    public static void toJson(Path jsonFile, @Nullable JsonElement element, boolean prettyPrinting) {
+    public static void writeJson(Path jsonFile, @Nullable JsonElement element, boolean prettyPrinting) {
         try {
             Files.createDirectories(jsonFile.getParent());
             try (OutputStreamWriter output = new OutputStreamWriter(new FileOutputStream(jsonFile.toFile()), StandardCharsets.UTF_8);
                  BufferedWriter writer = new BufferedWriter(output)) {
-                toJson(writer, element, prettyPrinting);
+                writeJson(writer, element, prettyPrinting);
             }
         } catch (IOException e) {
             Backups.LOGGER.error("could not write JSON file {}: {} / {}", jsonFile, e.getClass(), e.getMessage());
@@ -204,21 +139,5 @@ public class BackupUtils {
         } catch (Exception ex) {
             return JsonNull.INSTANCE;
         }
-    }
-
-    public static String removeAllWhitespace(String s) {
-        char[] chars = new char[s.length()];
-        int j = 0;
-
-        for (int i = 0; i < chars.length; i++) {
-            char c = s.charAt(i);
-
-            if (c > ' ') {
-                chars[j] = c;
-                j++;
-            }
-        }
-
-        return new String(chars, 0, j);
     }
 }

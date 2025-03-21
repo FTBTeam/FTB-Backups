@@ -1,11 +1,13 @@
-package dev.ftb.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups.api;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.ListCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import org.checkerframework.checker.units.qual.C;
+import dev.ftb.mods.ftbbackups.Backups;
+import org.apache.commons.io.FileUtils;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 public record Backup(long time, String fileId, int index, boolean success, long size) implements Comparable<Backup> {
@@ -31,8 +33,24 @@ public record Backup(long time, String fileId, int index, boolean success, long 
         return o == this || (o instanceof Backup && ((Backup) o).time == time);
     }
 
-    public File getFile() {
-        return new File(Backups.INSTANCE.backupsFolder.toFile(), fileId);
+    public Path getPath() {
+        return Backups.INSTANCE.backupsFolder.resolve(fileId);
+    }
+
+    public boolean deleteFiles() {
+        Path path = getPath();
+        try {
+            if (Files.isRegularFile(path)) {
+                Files.delete(path);
+            } else if (Files.isDirectory(path)) {
+                FileUtils.deleteDirectory(path.toFile());
+            }
+        } catch (IOException e) {
+            Backups.LOGGER.error("Can't delete backup {}: {} / {}", fileId(), e.getClass(), e.getMessage());
+            return false;
+        }
+        Backups.LOGGER.info("Deleted backup: {}", fileId());
+        return true;
     }
 
     @Override

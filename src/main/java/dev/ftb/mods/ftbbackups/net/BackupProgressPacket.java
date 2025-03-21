@@ -25,7 +25,7 @@ public record BackupProgressPacket(int current, int total) implements CustomPack
     }
 
     public static CustomPacketPayload create() {
-        return new BackupProgressPacket(Backups.INSTANCE.currentFile, Backups.INSTANCE.totalFiles);
+        return new BackupProgressPacket(Backups.INSTANCE.getCurrentFileIndex(), Backups.INSTANCE.totalFiles);
     }
 
     public static CustomPacketPayload reset() {

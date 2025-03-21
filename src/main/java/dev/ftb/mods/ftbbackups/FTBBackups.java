@@ -1,5 +1,9 @@
 package dev.ftb.mods.ftbbackups;
 
+import dev.ftb.mods.ftbbackups.api.event.RegisterArchivalPluginEvent;
+import dev.ftb.mods.ftbbackups.archival.ArchivePluginManager;
+import dev.ftb.mods.ftbbackups.archival.FileCopyArchiver;
+import dev.ftb.mods.ftbbackups.archival.ZipArchiver;
 import dev.ftb.mods.ftbbackups.client.BackupsClient;
 import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
 import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
@@ -8,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -45,6 +50,7 @@ public class FTBBackups {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::levelTick);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerArchivalPlugins);
 
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
     }
@@ -55,6 +61,8 @@ public class FTBBackups {
 
     public void serverAboutToStart(ServerAboutToStartEvent event) {
         Backups.INSTANCE.init(event.getServer());
+
+        NeoForge.EVENT_BUS.post(new RegisterArchivalPluginEvent(ArchivePluginManager.INSTANCE::register));
     }
 
     public void registerCommands(RegisterCommandsEvent event) {
@@ -70,6 +78,11 @@ public class FTBBackups {
         if (FTBBackupsConfig.FORCE_ON_SHUTDOWN.get()) {
             Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
         }
+    }
+
+    private void registerArchivalPlugins(RegisterArchivalPluginEvent event) {
+        event.register(FileCopyArchiver.INSTANCE);
+        event.register(ZipArchiver.INSTANCE);
     }
 
     public void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {

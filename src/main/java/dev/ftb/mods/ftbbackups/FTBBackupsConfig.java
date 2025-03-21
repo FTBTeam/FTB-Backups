@@ -1,7 +1,9 @@
 package dev.ftb.mods.ftbbackups;
 
 
+import dev.ftb.mods.ftbbackups.archival.ZipArchiver;
 import dev.ftb.mods.ftblibrary.snbt.config.*;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.common.util.Lazy;
 
 import java.util.ArrayList;
@@ -38,8 +40,8 @@ public interface FTBBackupsConfig {
             );
 
     IntValue COMPRESSION_LEVEL = CONFIG.addInt("compression_level", 1, 0, 9)
-            .comment(
-                    "0 - Disabled (output = folders)",
+            .comment("Compression level for archived files. Note that this is dependent on the particular plugin in use",
+                    "0 - No compression",
                     "1 - Best speed",
                     "9 - Smallest file size"
             );
@@ -68,6 +70,10 @@ public interface FTBBackupsConfig {
     IntValue BUFFER_SIZE = ADVANCED.addInt("buffer_size", 4096, 256, 65536)
             .comment("Buffer size for writing files.");
 
+    StringValue ARCHIVAL_PLUGIN = CONFIG.addString("archival_plugin", ZipArchiver.ID.toString())
+            .comment("Method to use to create a backup archive.",
+                    "Builtin methods are \"ftbbackups:zip\" (create a ZIP file) and \"ftbbackups:filecopy\" (simple recursive copy of files with no compression)",
+                    "More archival plugins may be added by other mods.");
 
     Lazy<Long> MAX_TOTAL_SIZE = Lazy.of(() -> {
         String mts = MAX_TOTAL_SIZE_RAW.get();
@@ -94,5 +100,14 @@ public interface FTBBackupsConfig {
 
     static void onConfigChanged(boolean isServer) {
         MAX_TOTAL_SIZE.invalidate();
+    }
+
+    static ResourceLocation archivalPlugin() {
+        ResourceLocation rl = ResourceLocation.tryParse(ARCHIVAL_PLUGIN.get());
+        if (rl == null) {
+            Backups.LOGGER.error("Invalid archive plugin id {}, defaulting to ftbbackups:zip!", ARCHIVAL_PLUGIN.get());
+            return ZipArchiver.ID;
+        }
+        return rl;
     }
 }

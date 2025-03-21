@@ -26,6 +26,7 @@
   "ftbbackups3.general.advanced": "Advanced",
   "ftbbackups3.general.advanced.buffer_size": "Buffer Size",
   "ftbbackups3.general.advanced.buffer_size.tooltip": "Buffer size used when reading files to be backed up.\nDon't adjust this unless you understand the implications!",
+  "ftbbackups3.lang.server": "Server",
   "ftbbackups3.lang.timer": "Next backup in: %s",
   "ftbbackups3.lang.timer_progress": "[%d%% | %d / %d]",
   "ftbbackups3.lang.start": "Server Backup started!",

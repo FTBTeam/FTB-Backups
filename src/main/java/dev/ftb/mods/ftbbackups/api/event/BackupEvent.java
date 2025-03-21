@@ -1,21 +1,21 @@
-package dev.ftb.mods.ftbbackups.api;
+package dev.ftb.mods.ftbbackups.api.event;
 
-import dev.ftb.mods.ftbbackups.Backup;
+import dev.ftb.mods.ftbbackups.api.Backup;
 import net.neoforged.bus.api.Event;
 
 import javax.annotation.Nullable;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 public class BackupEvent extends Event {
     public static class Pre extends BackupEvent {
-        private final Consumer<File> callback;
+        private final Consumer<Path> callback;
 
-        public Pre(Consumer<File> c) {
-            callback = c;
+        public Pre(Consumer<Path> callback) {
+            this.callback = callback;
         }
 
-        public void add(File file) {
+        public void add(Path file) {
             callback.accept(file);
         }
     }
@@ -24,9 +24,9 @@ public class BackupEvent extends Event {
         private final Backup backup;
         private final Exception error;
 
-        public Post(Backup b, @Nullable Exception ex) {
-            backup = b;
-            error = ex;
+        public Post(Backup backup, @Nullable Exception error) {
+            this.backup = backup;
+            this.error = error;
         }
 
         public Backup getBackup() {

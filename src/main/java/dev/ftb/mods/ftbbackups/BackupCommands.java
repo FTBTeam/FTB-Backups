@@ -78,11 +78,14 @@ public class BackupCommands {
     }
 
     private static int size(CommandSourceStack source) {
-        long totalSize = Backups.INSTANCE.backups.stream().mapToLong(Backup::size).sum();
+        long totalSize = Backups.INSTANCE.totalBackupSize();
 
-        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.current", BackupUtils.getSizeString(source.getServer().getWorldPath(LevelResource.ROOT).toFile())), true);
-        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.total", BackupUtils.getSizeString(totalSize)), true);
-        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.available", BackupUtils.getSizeString(Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), Backups.INSTANCE.backupsFolder.toFile().getFreeSpace()))), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.current",
+                BackupUtils.formatSizeString(source.getServer().getWorldPath(LevelResource.ROOT))), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.total",
+                BackupUtils.formatSizeString(totalSize)), true);
+        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.available",
+                BackupUtils.formatSizeString(Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), Backups.INSTANCE.backupsFolder.toFile().getFreeSpace()))), true);
 
         return 1;
     }
