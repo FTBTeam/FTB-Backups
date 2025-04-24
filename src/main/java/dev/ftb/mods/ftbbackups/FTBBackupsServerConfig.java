@@ -2,13 +2,17 @@ package dev.ftb.mods.ftbbackups;
 
 
 import dev.ftb.mods.ftbbackups.archival.ZipArchiver;
+import dev.ftb.mods.ftbbackups.config.ArchivalPluginValue;
 import dev.ftb.mods.ftblibrary.snbt.config.*;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.util.Lazy;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
-public interface FTBBackupsConfig {
+public interface FTBBackupsServerConfig {
     String KEY = FTBBackups.MOD_ID + "-server";
     SNBTConfig CONFIG = SNBTConfig.create(KEY)
             .comment("Server-specific configuration for FTB Backups 3",
@@ -17,6 +21,9 @@ public interface FTBBackupsConfig {
                     "Server admins may locally override this by copying into <instance>/world/serverconfig/" + KEY + ".snbt",
                     "  (will NOT be overwritten on modpack update)"
             );
+
+    // relative to the game directory: <instance>/ftbbackups3
+    String DEFAULT_BACKUP_FOLDER = FTBBackups.MOD_ID;
 
     BooleanValue AUTO = CONFIG.addBoolean("auto", true)
             .comment("Enables backups to run automatically");
@@ -39,7 +46,7 @@ public interface FTBBackupsConfig {
                     "1440 - backups once every day"
             );
 
-    IntValue COMPRESSION_LEVEL = CONFIG.addInt("compression_level", 1, 0, 9)
+    IntValue COMPRESSION_LEVEL = CONFIG.addInt("compression_level", 5, 0, 9)
             .comment("Compression level for archived files. Note that this is dependent on the particular plugin in use",
                     "0 - No compression",
                     "1 - Best speed",
@@ -70,7 +77,7 @@ public interface FTBBackupsConfig {
     IntValue BUFFER_SIZE = ADVANCED.addInt("buffer_size", 4096, 256, 65536)
             .comment("Buffer size for writing files.");
 
-    StringValue ARCHIVAL_PLUGIN = CONFIG.addString("archival_plugin", ZipArchiver.ID.toString())
+    ArchivalPluginValue ARCHIVAL_PLUGIN = CONFIG.add(new ArchivalPluginValue(CONFIG, "archival_plugin", ZipArchiver.ID))
             .comment("Method to use to create a backup archive.",
                     "Builtin methods are \"ftbbackups:zip\" (create a ZIP file) and \"ftbbackups:filecopy\" (simple recursive copy of files with no compression)",
                     "More archival plugins may be added by other mods.");
@@ -103,11 +110,18 @@ public interface FTBBackupsConfig {
     }
 
     static ResourceLocation archivalPlugin() {
-        ResourceLocation rl = ResourceLocation.tryParse(ARCHIVAL_PLUGIN.get());
+        ResourceLocation rl = ARCHIVAL_PLUGIN.get();
         if (rl == null) {
             Backups.LOGGER.error("Invalid archive plugin id {}, defaulting to ftbbackups:zip!", ARCHIVAL_PLUGIN.get());
             return ZipArchiver.ID;
         }
         return rl;
+    }
+
+    static Path getBackupFolder(Path gameDir) {
+        String folder = FTBBackupsServerConfig.FOLDER.get();
+        return folder.trim().isEmpty() ?
+                FMLPaths.GAMEDIR.get().resolve(DEFAULT_BACKUP_FOLDER) :
+                Paths.get(folder);
     }
 }

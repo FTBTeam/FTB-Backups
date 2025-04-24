@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -43,7 +42,8 @@ public class FTBBackups {
         }
         eventBus.addListener(this::registerNetwork);
 
-        ConfigManager.getInstance().registerServerConfig(FTBBackupsConfig.CONFIG, MOD_ID + ".general", true, FTBBackupsConfig::onConfigChanged);
+        ConfigManager.getInstance().registerServerConfig(FTBBackupsServerConfig.CONFIG, MOD_ID + ".general", true, FTBBackupsServerConfig::onConfigChanged);
+        ConfigManager.getInstance().registerClientConfig(FTBBackupsClientConfig.CONFIG, MOD_ID + ".general");
 
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
@@ -60,9 +60,9 @@ public class FTBBackups {
     }
 
     public void serverAboutToStart(ServerAboutToStartEvent event) {
-        Backups.INSTANCE.init(event.getServer());
+        Backups.initServerInstance();
 
-        NeoForge.EVENT_BUS.post(new RegisterArchivalPluginEvent(ArchivePluginManager.INSTANCE::register));
+        NeoForge.EVENT_BUS.post(new RegisterArchivalPluginEvent(ArchivePluginManager.serverInstance()::register));
     }
 
     public void registerCommands(RegisterCommandsEvent event) {
@@ -75,8 +75,10 @@ public class FTBBackups {
     }
 
     public void serverStopping(ServerStoppingEvent event) {
-        if (FTBBackupsConfig.FORCE_ON_SHUTDOWN.get()) {
-            Backups.INSTANCE.run(event.getServer(), true, Component.literal("Server"), "");
+        ArchivePluginManager.serverInstance().clear();
+
+        if (FTBBackupsServerConfig.FORCE_ON_SHUTDOWN.get()) {
+            Backups.getServerInstance().run(event.getServer(), true, Component.literal("Server"), "");
         }
     }
 
@@ -87,18 +89,18 @@ public class FTBBackups {
 
     public void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            PacketDistributor.sendToPlayer(serverPlayer, BackupProgressPacket.create());
+            PacketDistributor.sendToPlayer(serverPlayer, BackupProgressPacket.update());
         }
     }
 
     public void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer) {
-            Backups.INSTANCE.hadPlayersOnline = true;
+            Backups.getServerInstance().hadPlayersOnline = true;
         }
     }
 
     public void levelTick(ServerTickEvent.Post event) {
-        Backups.INSTANCE.tick(event.getServer(), System.currentTimeMillis());
+        Backups.getServerInstance().tick(event.getServer(), System.currentTimeMillis());
     }
 
     public static ResourceLocation id(String path) {

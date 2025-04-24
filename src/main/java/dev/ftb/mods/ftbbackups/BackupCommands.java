@@ -5,6 +5,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.architectury.networking.NetworkManager;
+import dev.ftb.mods.ftblibrary.net.EditConfigChoicePacket;
+import dev.ftb.mods.ftblibrary.net.EditConfigChoicePacket.ConfigType;
 import dev.ftb.mods.ftblibrary.net.EditConfigPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,7 +20,7 @@ import java.time.Instant;
 
 public class BackupCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("ftbbackups")
+        dispatcher.register(Commands.literal(FTBBackups.MOD_ID)
                 .then(Commands.literal("time")
                         .executes(ctx -> time(ctx.getSource()))
                 )
@@ -45,6 +47,14 @@ public class BackupCommands {
                         .requires(BackupCommands::isAdmin)
                         .executes(ctx -> editServerConfig(ctx.getSource()))
                 )
+                .then(Commands.literal("clientconfig")
+                        .requires(CommandSourceStack::isPlayer)
+                        .executes(ctx -> editClientConfig(ctx.getSource()))
+                )
+                .then(Commands.literal("config")
+                        .requires(CommandSourceStack::isPlayer)
+                        .executes(ctx -> editConfig(ctx.getSource()))
+                )
         );
     }
 
@@ -53,12 +63,24 @@ public class BackupCommands {
     }
 
     private static int editServerConfig(CommandSourceStack source) throws CommandSyntaxException {
-        NetworkManager.sendToPlayer(source.getPlayerOrException(), new EditConfigPacket(FTBBackupsConfig.KEY));
+        NetworkManager.sendToPlayer(source.getPlayerOrException(), EditConfigChoicePacket.server(FTBBackupsServerConfig.KEY));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int editClientConfig(CommandSourceStack source) throws CommandSyntaxException {
+        NetworkManager.sendToPlayer(source.getPlayerOrException(), EditConfigChoicePacket.client(FTBBackupsClientConfig.KEY));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int editConfig(CommandSourceStack source) throws CommandSyntaxException {
+        NetworkManager.sendToPlayer(source.getPlayerOrException(), EditConfigChoicePacket.choose(
+                FTBBackupsClientConfig.KEY, FTBBackupsServerConfig.KEY, Component.literal("FTB Backups 3"))
+        );
         return Command.SINGLE_SUCCESS;
     }
 
     private static int time(CommandSourceStack source) {
-        Duration d = Duration.between(Instant.now(), Instant.ofEpochMilli(Backups.INSTANCE.nextBackupTime));
+        Duration d = Duration.between(Instant.now(), Instant.ofEpochMilli(Backups.getServerInstance().nextBackupTime));
         var s = String.format("%02d:%02d:%02d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart());
 
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.timer", s), true);
@@ -66,7 +88,7 @@ public class BackupCommands {
     }
 
     private static int start(CommandSourceStack source, String customName) {
-        if (Backups.INSTANCE.run(source.getServer(), false, source.getDisplayName(), customName)) {
+        if (Backups.getServerInstance().run(source.getServer(), false, source.getDisplayName(), customName)) {
             for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
                 player.sendSystemMessage(Component.translatable("ftbbackups3.lang.manual_launch", source.getDisplayName()));
             }
@@ -78,14 +100,14 @@ public class BackupCommands {
     }
 
     private static int size(CommandSourceStack source) {
-        long totalSize = Backups.INSTANCE.totalBackupSize();
+        long totalSize = Backups.getServerInstance().totalBackupSize();
 
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.current",
                 BackupUtils.formatSizeString(source.getServer().getWorldPath(LevelResource.ROOT))), true);
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.total",
                 BackupUtils.formatSizeString(totalSize)), true);
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.available",
-                BackupUtils.formatSizeString(Math.min(FTBBackupsConfig.MAX_TOTAL_SIZE.get(), Backups.INSTANCE.backupsFolder.toFile().getFreeSpace()))), true);
+                BackupUtils.formatSizeString(Math.min(FTBBackupsServerConfig.MAX_TOTAL_SIZE.get(), Backups.getServerInstance().backupsFolder.toFile().getFreeSpace()))), true);
 
         return 1;
     }

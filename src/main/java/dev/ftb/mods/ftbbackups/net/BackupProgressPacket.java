@@ -18,18 +18,20 @@ public record BackupProgressPacket(int current, int total) implements CustomPack
             BackupProgressPacket::new
     );
 
-    private static final BackupProgressPacket RESET_PACKET = new BackupProgressPacket(0, 0);
-
     public static void handler(BackupProgressPacket message, IPayloadContext context) {
         BackupsClient.setBackupProgress(message.current, message.total);
     }
 
-    public static CustomPacketPayload create() {
-        return new BackupProgressPacket(Backups.INSTANCE.getCurrentFileIndex(), Backups.INSTANCE.totalFiles);
+    public static CustomPacketPayload start() {
+        return new BackupProgressPacket(0, Backups.getServerInstance().totalFiles);
     }
 
-    public static CustomPacketPayload reset() {
-        return RESET_PACKET;
+    public static CustomPacketPayload update() {
+        return new BackupProgressPacket(Backups.getServerInstance().getCurrentFileIndex(), Backups.getServerInstance().totalFiles);
+    }
+
+    public static CustomPacketPayload complete() {
+        return new BackupProgressPacket(Backups.getServerInstance().totalFiles, Backups.getServerInstance().totalFiles);
     }
 
     @Override

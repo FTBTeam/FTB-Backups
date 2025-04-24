@@ -1,0 +1,8 @@
+{
+  "icon": [
+    "ftblibrary:icons/settings; tint=#FFC0C0FF",
+    "ftblibrary:icons/down"
+  ],
+  "sort_index": 700,
+  "click": ["command:/ftbbackups3 config"]
+}
