@@ -82,6 +82,7 @@ configurations {
 repositories {
 	mavenLocal()
 	maven { url "https://maven.ftb.dev/releases" } // FTB Mods
+	maven { url "https://maven.ftb.dev/snapshots" } // FTB Mods
 	maven { url "https://maven.architectury.dev" }
 }
 
