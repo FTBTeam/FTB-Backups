@@ -77,6 +77,7 @@ public class Backups {
 
         try {
             backupsFolder = backupsFolder.toRealPath();
+            Files.createDirectories(backupsFolder);
         } catch (Exception ignored) {
         }
 
