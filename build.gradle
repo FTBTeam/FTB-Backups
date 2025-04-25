@@ -171,6 +171,7 @@ publishMods {
 publishing {
 	publications {
 		register('mavenJava', MavenPublication) {
+			artifactId = archives_base_name
 			from components.java
 			artifact sourcesJar
 			artifact apiJar
