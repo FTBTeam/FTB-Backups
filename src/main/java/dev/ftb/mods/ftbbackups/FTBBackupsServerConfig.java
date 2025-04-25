@@ -39,7 +39,7 @@ public interface FTBBackupsServerConfig {
 
     IntValue BACKUP_TIMER_MINUTES = CONFIG.addInt("backup_timer", 120, 1, 43800)
             .comment(
-                    "Timer in minutes.",
+                    "Backup frequency in minutes.",
                     "5 - backups every 5 minutes",
                     "60 - backups every hour",
                     "360 - backups every 6 hours",
@@ -47,26 +47,27 @@ public interface FTBBackupsServerConfig {
             );
 
     IntValue COMPRESSION_LEVEL = CONFIG.addInt("compression_level", 5, 0, 9)
-            .comment("Compression level for archived files. Note that this is dependent on the particular plugin in use",
+            .comment("Compression level for archived files. Note that this is dependent on the particular plugin in use.",
+                    "Higher values typically mean backups take longer to do but take less space on disk.",
                     "0 - No compression",
-                    "1 - Best speed",
-                    "9 - Smallest file size"
+                    "1 - Minimal compression",
+                    "9 - Full compression"
             );
 
     StringValue FOLDER = CONFIG.addString("folder", "")
-            .comment("Absolute path to backups folder.");
+            .comment("Absolute path to backups folder. Default of \"\" means to use \"ftbackups3\" within the game instance folder.");
 
     BooleanValue DISPLAY_FILE_SIZE = CONFIG.addBoolean("display_file_size", true)
-            .comment("Prints (current size | total size) when backup is done.");
+            .comment("Broadcasts to all online players a \"(current size | total size)\" message when backup is done.");
 
     StringListValue EXTRA_FILES = CONFIG.addStringList("extra_files", new ArrayList<>())
-            .comment("Add extra files that will be placed in backup _extra_/ folder.");
+            .comment("Add extra files/folders to be backed up, in addition to the world folder. These files *must* be within the game instance!");
 
     StringValue MAX_TOTAL_SIZE_RAW = CONFIG.addString("max_total_size", "50 GB")
             .comment("Maximum total size that is allowed in backups folder. Older backups will be deleted to free space for newer ones.");
 
     BooleanValue ONLY_IF_PLAYERS_ONLINE = CONFIG.addBoolean("only_if_players_online", true)
-            .comment("Only create backups when players have been online.");
+            .comment("Only create backups when at least one player is online.");
 
     BooleanValue FORCE_ON_SHUTDOWN = CONFIG.addBoolean("force_on_shutdown", false)
             .comment("Create a backup when server is stopped.");
@@ -75,7 +76,7 @@ public interface FTBBackupsServerConfig {
             .comment("Advanced features that shouldn't be changed unless you know what you are doing.");
 
     IntValue BUFFER_SIZE = ADVANCED.addInt("buffer_size", 4096, 256, 65536)
-            .comment("Buffer size for writing files.");
+            .comment("Buffer size for reading/writing files.");
 
     ArchivalPluginValue ARCHIVAL_PLUGIN = CONFIG.add(new ArchivalPluginValue(CONFIG, "archival_plugin", ZipArchiver.ID))
             .comment("Method to use to create a backup archive.",
