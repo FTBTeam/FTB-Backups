@@ -58,5 +58,6 @@
   "ftbbackups3.gui.restore_now": "Restore",
   "ftbbackups3.gui.list.file": "Filename: %s",
   "ftbbackups3.gui.list.plugin": "Archival Plugin: %s",
-  "sidebar_button.ftbbackups3.config": "FTB Backups 3 Configuration"
+  "sidebar_button.ftbbackups3.config": "FTB Backups 3 Configuration",
+  "sidebar_button.ftbbackups3.config.tooltip": "Settings for the FTB Backups 3 mod"
 }
