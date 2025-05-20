@@ -264,7 +264,6 @@ public class Backups {
                         if (file.isAbsolute()) {
                             LOGGER.error("ignoring absolute file {} in extras!", file);
                         } else {
-//                            res.put(file.toRealPath(), file.isAbsolute() ? "_extra_absolute_" + file : "_extra_relative_" + File.separator + file);
                             res.put(file.toRealPath(), file.toString());
                         }
                         return FileVisitResult.CONTINUE;
