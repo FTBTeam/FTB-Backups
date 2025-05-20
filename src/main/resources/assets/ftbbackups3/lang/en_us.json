@@ -15,7 +15,7 @@
   "ftbbackups3.general.display_file_size": "Display File Size",
   "ftbbackups3.general.display_file_size.tooltip": "When true (and \"Run Silently\" is false), also display backed-up file size to players",
   "ftbbackups3.general.extra_files": "Extra Files",
-  "ftbbackups3.general.extra_files.tooltip": "By default, just the files in the world folder are backed up\nThis can be used to add extra files from outside the world folder to the backup\nWorld folder is \"world\" on a dedicated server,\n and \"saves/<worldname>\" on a single-player instance",
+  "ftbbackups3.general.extra_files.tooltip": "By default, just the files in the world folder are backed up\nThis can be used to add extra files from outside the world folder (but inside the game instance!) to the backup\nWorld folder is \"world\" on a dedicated server,\n and \"saves/<worldname>\" on a single-player instance",
   "ftbbackups3.general.max_total_size": "Maximum Total Size",
   "ftbbackups3.general.max_total_size.tooltip": "The maximum size to allow for backups.\nOldest backups will be deleted to keep the total backup size under this amount\nValid suffixes: KB, MB, GB, TB",
   "ftbbackups3.general.only_if_players_online": "Only if Players are Online",
