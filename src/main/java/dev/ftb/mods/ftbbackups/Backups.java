@@ -16,13 +16,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -48,10 +50,10 @@ public class Backups {
     public boolean printFiles = false;
 
     private final AtomicInteger currentFileIndex = new AtomicInteger(0);
+    private final AtomicInteger totalFileCount = new AtomicInteger(0);
     private int prevFileIndex = 0;
-    public int totalFiles = 0;
     private String currentFileName = "";
-    public boolean hadPlayersOnline = false;
+    public boolean playersOnlineSinceLastBackup = false;
 
     public static Backups getClientInstance() {
         if (clientInstance == null) {
@@ -73,7 +75,7 @@ public class Backups {
     }
 
     private Backups() {
-        backupsFolder = FTBBackupsServerConfig.getBackupFolder(FMLPaths.GAMEDIR.get());
+        backupsFolder = FTBBackupsServerConfig.getBackupFolder();
 
         try {
             backupsFolder = backupsFolder.toRealPath();
@@ -86,7 +88,6 @@ public class Backups {
         loadIndexFile();
 
         LOGGER.info("Backups will be written to: {}", backupsFolder);
-        nextBackupTime = System.currentTimeMillis() + FTBBackupsServerConfig.getBackupTimerMillis();
     }
 
     public void loadIndexFile() {
@@ -104,9 +105,14 @@ public class Backups {
     }
 
     public void tick(MinecraftServer server, long now) {
+        if (nextBackupTime < 0) {
+            // will be the case on the first tick
+            nextBackupTime = System.currentTimeMillis() + FTBBackupsServerConfig.getBackupTimerMillis();
+        }
+
         if (nextBackupTime > 0L && nextBackupTime <= now) {
-            if (!FTBBackupsServerConfig.ONLY_IF_PLAYERS_ONLINE.get() || hadPlayersOnline || !server.getPlayerList().getPlayers().isEmpty()) {
-                hadPlayersOnline = false;
+            if (!FTBBackupsServerConfig.ONLY_IF_PLAYERS_ONLINE.get() || playersOnlineSinceLastBackup || !server.getPlayerList().getPlayers().isEmpty()) {
+                playersOnlineSinceLastBackup = false;
                 run(server, true, Component.translatable("ftbbackups3.lang.server"), "");
             }
         }
@@ -120,18 +126,20 @@ public class Backups {
                 }
             }
 
-            currentFileIndex.set(0);
             if (!FTBBackupsServerConfig.SILENT.get()) {
-                PacketDistributor.sendToAllPlayers(BackupProgressPacket.complete());
+                BackupProgressPacket.sendProgress(server, BackupProgressPacket.complete());
             }
+
+            currentFileIndex.set(0);
+            totalFileCount.set(0);
         } else if (backupStatus.isRunning() && printFiles) {
             int curIdx = currentFileIndex.get();
-            if (curIdx == 0 || curIdx == totalFiles - 1) {
-                LOGGER.info("[{} | {}%]: {}", currentFileIndex, (int) ((curIdx / (double) totalFiles) * 100D), currentFileName);
+            if (curIdx == 0 || curIdx == totalFileCount.get() - 1) {
+                LOGGER.info("[{} | {}%]: {}", currentFileIndex, (int) ((curIdx / (double) totalFileCount.get()) * 100D), currentFileName);
             }
 
             if (!FTBBackupsServerConfig.SILENT.get() && prevFileIndex != currentFileIndex.get()) {
-                PacketDistributor.sendToAllPlayers(BackupProgressPacket.update());
+                BackupProgressPacket.sendProgress(server, BackupProgressPacket.update());
                 prevFileIndex = currentFileIndex.get();
             }
         }
@@ -181,6 +189,10 @@ public class Backups {
         Path absoluteWorldPath = server.getWorldPath(LevelResource.ROOT).toAbsolutePath();
 
         IArchivalPlugin archivalPlugin = ArchivePluginManager.serverInstance().getPlugin(FTBBackupsServerConfig.archivalPlugin());
+        if (archivalPlugin == null) {
+            Backups.LOGGER.error("bad archive plugin setting in server config: {}! backup skipped", FTBBackupsServerConfig.archivalPlugin());
+            return;
+        }
 
         String backupFileName = archivalPlugin.addFileExtension(customName.isEmpty() ? DATE_TIME_FORMATTER.format(LocalDateTime.now()) : customName);
 
@@ -200,11 +212,11 @@ public class Backups {
 
             doArchiveCleanup(archiveSize);
 
-            totalFiles = manifest.size();
-            LOGGER.info("Backing up {} files...", totalFiles);
+            totalFileCount.set(manifest.size());
+            LOGGER.info("Backing up {} files...", totalFileCount);
             printFiles = true;
 
-            PacketDistributor.sendToAllPlayers(BackupProgressPacket.start());
+            BackupProgressPacket.sendProgress(server, BackupProgressPacket.start());
 
             currentFileIndex.set(0);
             Path archiveDest = backupsFolder.resolve(backupFileName);
@@ -361,6 +373,10 @@ public class Backups {
 
     public int getCurrentFileIndex() {
         return currentFileIndex.get();
+    }
+
+    public int getTotalFileCount() {
+        return totalFileCount.get();
     }
 
     public Collection<Backup> backups() {

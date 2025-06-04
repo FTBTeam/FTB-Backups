@@ -75,13 +75,16 @@ public interface FTBBackupsServerConfig {
     SNBTConfig ADVANCED = CONFIG.addGroup("advanced")
             .comment("Advanced features that shouldn't be changed unless you know what you are doing.");
 
-    IntValue BUFFER_SIZE = ADVANCED.addInt("buffer_size", 4096, 256, 65536)
-            .comment("Buffer size for reading/writing files.");
-
     ArchivalPluginValue ARCHIVAL_PLUGIN = CONFIG.add(new ArchivalPluginValue(CONFIG, "archival_plugin", ZipArchiver.ID))
             .comment("Method to use to create a backup archive.",
                     "Builtin methods are \"ftbbackups:zip\" (create a ZIP file) and \"ftbbackups:filecopy\" (simple recursive copy of files with no compression)",
                     "More archival plugins may be added by other mods.");
+
+    BooleanValue NOTIFY_ADMINS_ONLY = CONFIG.addBoolean("notify_admins_only", false)
+            .comment("If true, only player with permission level >= 2 (or SSP integrated server owners) will be notified on-screen about backup progress");
+
+    IntValue BUFFER_SIZE = ADVANCED.addInt("buffer_size", 4096, 256, 65536)
+            .comment("Buffer size for reading/writing files.");
 
     Lazy<Long> MAX_TOTAL_SIZE = Lazy.of(() -> {
         String mts = MAX_TOTAL_SIZE_RAW.get();
@@ -106,7 +109,7 @@ public interface FTBBackupsServerConfig {
         return BACKUP_TIMER_MINUTES.get() * 60000L;  // 60000 millisecs in a minute
     }
 
-    static void onConfigChanged(boolean isServer) {
+    static void onConfigChanged(boolean ignoredIsServer) {
         MAX_TOTAL_SIZE.invalidate();
     }
 
@@ -119,7 +122,7 @@ public interface FTBBackupsServerConfig {
         return rl;
     }
 
-    static Path getBackupFolder(Path gameDir) {
+    static Path getBackupFolder() {
         String folder = FTBBackupsServerConfig.FOLDER.get();
         return folder.trim().isEmpty() ?
                 FMLPaths.GAMEDIR.get().resolve(DEFAULT_BACKUP_FOLDER) :

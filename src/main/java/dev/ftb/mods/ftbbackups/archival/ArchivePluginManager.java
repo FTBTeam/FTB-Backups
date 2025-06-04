@@ -4,6 +4,7 @@ import dev.ftb.mods.ftbbackups.api.IArchivalPlugin;
 import dev.ftb.mods.ftbbackups.api.event.RegisterArchivalPluginEvent;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.common.NeoForge;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
@@ -36,6 +37,7 @@ public class ArchivePluginManager {
         plugins.put(plugin.getId(), plugin);
     }
 
+    @Nullable
     public IArchivalPlugin getPlugin(ResourceLocation id) {
         return plugins.get(id);
     }

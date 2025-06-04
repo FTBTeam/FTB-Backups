@@ -4,7 +4,6 @@ import dev.ftb.mods.ftbbackups.Backups;
 import dev.ftb.mods.ftbbackups.FTBBackupsServerConfig;
 import dev.ftb.mods.ftbbackups.api.Backup;
 import dev.ftb.mods.ftbbackups.api.IArchivalPlugin;
-import dev.ftb.mods.ftbbackups.api.event.RegisterArchivalPluginEvent;
 import dev.ftb.mods.ftbbackups.archival.ArchivePluginManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -22,7 +21,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -97,7 +95,7 @@ public class RestoreBackupScreen extends Screen {
         minecraft.setScreen(this);
 
         if (confirmed) {
-            Path backupsFolder = FTBBackupsServerConfig.getBackupFolder(FMLPaths.GAMEDIR.get());
+            Path backupsFolder = FTBBackupsServerConfig.getBackupFolder();
 
             Backup backup = selected.backup;
 

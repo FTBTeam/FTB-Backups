@@ -5,7 +5,6 @@ import dev.ftb.mods.ftbbackups.archival.ArchivePluginManager;
 import dev.ftb.mods.ftbbackups.archival.FileCopyArchiver;
 import dev.ftb.mods.ftbbackups.archival.ZipArchiver;
 import dev.ftb.mods.ftbbackups.client.BackupsClient;
-import dev.ftb.mods.ftbbackups.net.BackupProgressPacket;
 import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
 import dev.ftb.mods.ftblibrary.config.manager.ConfigManager;
 import net.minecraft.network.chat.Component;
@@ -24,39 +23,30 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Mod(FTBBackups.MOD_ID)
 public class FTBBackups {
     public static final String MOD_ID = "ftbbackups3";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FTBBackups.class);
-
     public FTBBackups(IEventBus eventBus, ModContainer container) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            eventBus.<FMLClientSetupEvent>addListener(event -> clientSetup(event, eventBus));
+            eventBus.<FMLClientSetupEvent>addListener(event -> BackupsClient.onModConstruction());
         }
         eventBus.addListener(this::registerNetwork);
 
-        ConfigManager.getInstance().registerServerConfig(FTBBackupsServerConfig.CONFIG, MOD_ID + ".general", true, FTBBackupsServerConfig::onConfigChanged);
+        ConfigManager.getInstance().registerServerConfig(FTBBackupsServerConfig.CONFIG, MOD_ID + ".general",
+                true, FTBBackupsServerConfig::onConfigChanged);
         ConfigManager.getInstance().registerClientConfig(FTBBackupsClientConfig.CONFIG, MOD_ID + ".general");
 
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
-        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedIn);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::levelTick);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerArchivalPlugins);
 
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
-    }
-
-    private void clientSetup(FMLClientSetupEvent event, IEventBus eventBus) {
-        BackupsClient.init(eventBus);
     }
 
     public void serverAboutToStart(ServerAboutToStartEvent event) {
@@ -87,15 +77,9 @@ public class FTBBackups {
         event.register(ZipArchiver.INSTANCE);
     }
 
-    public void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            PacketDistributor.sendToPlayer(serverPlayer, BackupProgressPacket.update());
-        }
-    }
-
     public void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer) {
-            Backups.getServerInstance().hadPlayersOnline = true;
+            Backups.getServerInstance().playersOnlineSinceLastBackup = true;
         }
     }
 

@@ -9,8 +9,6 @@ import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.Event;
-import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
@@ -26,13 +24,10 @@ public class BackupsClient {
 
     private static int progressTicker = 0;
 
-    public static void init(IEventBus eventBus) {
+    public static void onModConstruction() {
         NeoForge.EVENT_BUS.addListener(BackupsClient::onClientDisconnected);
-//        NeoForge.EVENT_BUS.addListener(BackupsClient::onDebugInfoEvent);
         NeoForge.EVENT_BUS.addListener(BackupsClient::addRestoreButton);
         NeoForge.EVENT_BUS.addListener(BackupsClient::clientTick);
-
-//        eventBus.addListener(BackupsClient::registerGuiLayer);
     }
 
     private static void clientTick(ClientTickEvent.Post event) {
@@ -73,18 +68,6 @@ public class BackupsClient {
     private static void onClientDisconnected(ClientPlayerNetworkEvent.LoggingOut ignoredEvent) {
         backupProgress = BackupProgress.NONE;
     }
-
-//    private static void onDebugInfoEvent(CustomizeGuiOverlayEvent.DebugText event) {
-//        OptionInstance<Boolean> booleanOptionInstance = Minecraft.getInstance().options.reducedDebugInfo();
-//        if (booleanOptionInstance.get()) {
-//            return;
-//        }
-//
-//        if (backupProgress.total() > 0 && backupProgress.total() > backupProgress.current()) {
-//            // I think this is right? @mikey (2025-03-18)
-//            event.getLeft().add(progressMessage().withStyle(ChatFormatting.LIGHT_PURPLE).getString());
-//        }
-//    }
 
     public static @NotNull MutableComponent progressMessage() {
         return Component.translatable("ftbbackups3.lang.timer_progress", backupProgress.current() * 100 / backupProgress.total(), backupProgress.current(), backupProgress.total());

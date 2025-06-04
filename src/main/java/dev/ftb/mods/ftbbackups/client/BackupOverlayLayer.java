@@ -62,8 +62,8 @@ public class BackupOverlayLayer implements LayeredDraw.Layer {
 
         int pw = (int) ((width - 4) * Mth.lerp(deltaTracker.getGameTimeDeltaTicks(), prevProgress, progress.current()) / progress.total());
         int sy = font.lineHeight + 4;
-        guiGraphics.fill(2, sy - 1, width - 3, sy + progressBarHeight + 1, 0xFF0060E0);
-        guiGraphics.fill(3, sy, pw, sy + progressBarHeight, 0xFF0040A0);
+        guiGraphics.fill(2, sy - 1, width - 3, sy + progressBarHeight + 1, 0xC00060E0);
+        guiGraphics.fill(3, sy, pw, sy + progressBarHeight, 0xC00040A0);
 
         guiGraphics.drawString(font, line2, 14, 2 + font.lineHeight + 5, 0xFFFAF9F6, false);
 

@@ -1,7 +1,7 @@
 package dev.ftb.mods.ftbbackups.client;
 
-import dev.ftb.mods.ftbbackups.config.ArchivalPluginConfig;
 import dev.ftb.mods.ftbbackups.archival.ArchivePluginManager;
+import dev.ftb.mods.ftbbackups.config.ArchivalPluginConfig;
 import dev.ftb.mods.ftblibrary.config.ConfigCallback;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftblibrary.ui.Panel;

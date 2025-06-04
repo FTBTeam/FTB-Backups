@@ -43,8 +43,8 @@ public interface IArchivalPlugin {
 
     /**
      * Called to restore a backup archive, overwriting existing files in a game instance. This is only
-     * called by the client for SSP instances, while the game is not actually running; it's not applicable to
-     * dedicated server instances.
+     * called from the client world selection screen for SSP instances, while no world is actually running;
+     * it's not relevant for dedicated server instances.
      *
      * @param context the restoration context
      * @throws Exception thrown if anything goes wrong

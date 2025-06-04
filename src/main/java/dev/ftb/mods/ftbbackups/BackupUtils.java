@@ -8,7 +8,6 @@ import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
-import org.apache.commons.lang3.mutable.MutableLong;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -19,7 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 public class BackupUtils {
     public static final long KB = 1024L;
@@ -86,8 +84,8 @@ public class BackupUtils {
         if (element == null || element.isJsonNull()) {
             try {
                 writer.write("null");
-            } catch (Exception ex) {
-                ex.printStackTrace();
+            } catch (IOException ex) {
+                throw new JsonIOException(ex);
             }
 
             return;
@@ -104,7 +102,7 @@ public class BackupUtils {
 
         try {
             Streams.write(element, jsonWriter);
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             throw new JsonIOException(ex);
         }
     }

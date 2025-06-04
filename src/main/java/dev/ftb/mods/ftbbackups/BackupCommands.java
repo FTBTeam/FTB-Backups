@@ -6,8 +6,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.architectury.networking.NetworkManager;
 import dev.ftb.mods.ftblibrary.net.EditConfigChoicePacket;
-import dev.ftb.mods.ftblibrary.net.EditConfigChoicePacket.ConfigType;
-import dev.ftb.mods.ftblibrary.net.EditConfigPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -81,10 +79,15 @@ public class BackupCommands {
 
     private static int time(CommandSourceStack source) {
         Duration d = Duration.between(Instant.now(), Instant.ofEpochMilli(Backups.getServerInstance().nextBackupTime));
-        var s = String.format("%02d:%02d:%02d", d.toHoursPart(), d.toMinutesPart(), d.toSecondsPart());
+        String key = d.isNegative() ? "ftbbackups3.lang.timer.in_past" : "ftbbackups3.lang.timer";
+        Duration a = d.abs();
+        Component msg = Component.translatable(key, String.format("%02d:%02d:%02d", a.toHoursPart(), a.toMinutesPart(), a.toSecondsPart()));
+        source.sendSuccess(() -> msg, true);
+        if (d.isNegative() && FTBBackupsServerConfig.ONLY_IF_PLAYERS_ONLINE.get()) {
+            source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.timer.no_players"), true);
+        }
 
-        source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.timer", s), true);
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 
     private static int start(CommandSourceStack source, String customName) {
@@ -96,7 +99,7 @@ public class BackupCommands {
             source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.already_running"), true);
         }
 
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 
     private static int size(CommandSourceStack source) {
@@ -109,7 +112,7 @@ public class BackupCommands {
         source.sendSuccess(() -> Component.translatable("ftbbackups3.lang.size.available",
                 BackupUtils.formatSizeString(Math.min(FTBBackupsServerConfig.MAX_TOTAL_SIZE.get(), Backups.getServerInstance().backupsFolder.toFile().getFreeSpace()))), true);
 
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 
     private static int status(CommandSourceStack source) {
@@ -121,7 +124,7 @@ public class BackupCommands {
             }
         });
 
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 
     /**
@@ -131,7 +134,7 @@ public class BackupCommands {
     private static int resetState(CommandSourceStack source) {
         source.getServer().getAllLevels().forEach(level -> {
             if (level != null) {
-                source.sendSuccess(() -> Component.literal("Reseting state + saving for " + level.toString()), true);
+                source.sendSuccess(() -> Component.literal("Reseting state + saving for " + level.dimension().location()), true);
                 level.noSave = false;
                 level.save(null, true, true);
             }
