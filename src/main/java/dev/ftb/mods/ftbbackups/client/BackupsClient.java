@@ -62,7 +62,6 @@ public class BackupsClient {
         if (backupProgress.finished()) {
             progressTicker = 40;
         }
-        Backups.LOGGER.info("progress: {}", backupProgress);
     }
 
     private static void onClientDisconnected(ClientPlayerNetworkEvent.LoggingOut ignoredEvent) {
