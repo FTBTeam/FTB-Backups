@@ -3,6 +3,7 @@ package dev.ftb.mods.ftbbackups;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.architectury.networking.NetworkManager;
 import dev.ftb.mods.ftblibrary.net.EditConfigChoicePacket;
@@ -18,7 +19,7 @@ import java.time.Instant;
 
 public class BackupCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal(FTBBackups.MOD_ID)
+        LiteralArgumentBuilder<CommandSourceStack> backupCommands = Commands.literal(FTBBackups.MOD_ID)
                 .then(Commands.literal("time")
                         .executes(ctx -> time(ctx.getSource()))
                 )
@@ -52,8 +53,15 @@ public class BackupCommands {
                 .then(Commands.literal("config")
                         .requires(CommandSourceStack::isPlayer)
                         .executes(ctx -> editConfig(ctx.getSource()))
-                )
-        );
+                );
+
+        dispatcher.register(backupCommands);
+
+        if (FTBBackupsServerConfig.ADD_BACKUP_COMMAND_ALIAS.get()) {
+            dispatcher.register(Commands.literal("backup")
+                    .redirect(backupCommands.build()));
+
+        }
     }
 
     private static boolean isAdmin(CommandSourceStack cs) {

@@ -86,6 +86,9 @@ public interface FTBBackupsServerConfig {
     IntValue BUFFER_SIZE = ADVANCED.addInt("buffer_size", 4096, 256, 65536)
             .comment("Buffer size for reading/writing files.");
 
+    BooleanValue ADD_BACKUP_COMMAND_ALIAS = CONFIG.addBoolean("add_backup_command_alias", true)
+            .comment("If true, the /backup command will be aliased to /ftbbackups3 backup");
+
     Lazy<Long> MAX_TOTAL_SIZE = Lazy.of(() -> {
         String mts = MAX_TOTAL_SIZE_RAW.get();
 
