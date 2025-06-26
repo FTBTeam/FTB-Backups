@@ -21,6 +21,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -42,6 +43,7 @@ public class FTBBackups {
 
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverAboutToStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopping);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::serverStopped);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::playerLoggedOut);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::levelTick);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::registerArchivalPlugins);
@@ -65,11 +67,13 @@ public class FTBBackups {
     }
 
     public void serverStopping(ServerStoppingEvent event) {
-        ArchivePluginManager.serverInstance().clear();
-
         if (FTBBackupsServerConfig.FORCE_ON_SHUTDOWN.get()) {
             Backups.getServerInstance().run(event.getServer(), true, Component.literal("Server"), "");
         }
+    }
+
+    public void serverStopped(ServerStoppedEvent event) {
+        ArchivePluginManager.serverInstance().clear();
     }
 
     private void registerArchivalPlugins(RegisterArchivalPluginEvent event) {
