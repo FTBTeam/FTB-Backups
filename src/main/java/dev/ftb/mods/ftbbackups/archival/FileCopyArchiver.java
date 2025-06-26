@@ -50,6 +50,7 @@ public enum FileCopyArchiver implements IArchivalPlugin {
                 if (Files.isRegularFile(source)) {
                     Path destination = context.destinationFolder().resolve(srcDir.relativize(source));
                     try {
+                        Files.createDirectories(destination.getParent());
                         context.notifyProcessingFile(source.toString());
                         Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
                     } catch (Exception ex) {

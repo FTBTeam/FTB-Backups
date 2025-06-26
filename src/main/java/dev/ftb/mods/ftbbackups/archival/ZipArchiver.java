@@ -74,6 +74,7 @@ public enum ZipArchiver implements IArchivalPlugin {
             }
 
             Path destFile = safePath(context.destinationFolder(), zipEntry);
+            Files.createDirectories(destFile.getParent());
             context.logger().info("extract to {}", destFile);
             try (FileOutputStream fos = new FileOutputStream(destFile.toFile())) {
                 int len;
