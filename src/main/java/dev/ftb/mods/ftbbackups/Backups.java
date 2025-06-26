@@ -81,7 +81,7 @@ public class Backups {
             Files.createDirectories(backupsFolder);
             backupsFolder = backupsFolder.toRealPath();
         } catch (Exception ignored) {
-            LOGGER.info("Failed to create backups folder: {}", backupsFolder);
+            LOGGER.error("Failed to create backups folder: {}", backupsFolder);
         }
 
         backupStatus = BackupStatus.NONE;
