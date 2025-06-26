@@ -26,6 +26,8 @@
   "ftbbackups3.general.archival_plugin.tooltip": "The plugin used to actually create files on disk.\nBuiltin options create ZIP files or flat file copies.",
   "ftbbackups3.general.notify_admins_only": "Notify Admins Only",
   "ftbbackups3.general.notify_admins_only.tooltip": "If true, only admin-level players (and SSP server owners) are notified on-screen about current backup progress\nIf false, all players are notified",
+  "ftbbackups3.general.add_backup_command_alias": "Add backup command alias",
+  "ftbbackups3.general.add_backup_command_alias.tooltip": "If true, register a /backups command as an alias to /ftbbackups3",
   "ftbbackups3.general.advanced": "Advanced",
   "ftbbackups3.general.advanced.buffer_size": "Buffer Size",
   "ftbbackups3.general.advanced.buffer_size.tooltip": "Buffer size used when reading files to be backed up.\nDon't adjust this unless you understand the implications!",
