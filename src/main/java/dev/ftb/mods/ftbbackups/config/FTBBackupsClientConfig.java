@@ -1,5 +1,6 @@
-package dev.ftb.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups.config;
 
+import dev.ftb.mods.ftbbackups.FTBBackups;
 import dev.ftb.mods.ftblibrary.snbt.config.BooleanValue;
 import dev.ftb.mods.ftblibrary.snbt.config.EnumValue;
 import dev.ftb.mods.ftblibrary.snbt.config.IntValue;

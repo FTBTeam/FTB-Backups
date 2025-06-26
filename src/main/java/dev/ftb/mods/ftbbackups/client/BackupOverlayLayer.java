@@ -1,7 +1,7 @@
 package dev.ftb.mods.ftbbackups.client;
 
 import dev.ftb.mods.ftbbackups.FTBBackups;
-import dev.ftb.mods.ftbbackups.FTBBackupsClientConfig;
+import dev.ftb.mods.ftbbackups.config.FTBBackupsClientConfig;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftblibrary.ui.GuiHelper;
 import net.minecraft.client.DeltaTracker;

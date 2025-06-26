@@ -1,7 +1,7 @@
 package dev.ftb.mods.ftbbackups.client;
 
 import dev.ftb.mods.ftbbackups.Backups;
-import dev.ftb.mods.ftbbackups.FTBBackupsServerConfig;
+import dev.ftb.mods.ftbbackups.config.FTBBackupsServerConfig;
 import dev.ftb.mods.ftbbackups.api.Backup;
 import dev.ftb.mods.ftbbackups.api.IArchivalPlugin;
 import dev.ftb.mods.ftbbackups.archival.ArchivePluginManager;

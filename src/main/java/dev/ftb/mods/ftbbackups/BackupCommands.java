@@ -6,6 +6,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.architectury.networking.NetworkManager;
+import dev.ftb.mods.ftbbackups.config.FTBBackupsClientConfig;
+import dev.ftb.mods.ftbbackups.config.FTBBackupsServerConfig;
 import dev.ftb.mods.ftblibrary.net.EditConfigChoicePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;

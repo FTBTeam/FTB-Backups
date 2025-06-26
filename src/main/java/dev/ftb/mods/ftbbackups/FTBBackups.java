@@ -5,6 +5,8 @@ import dev.ftb.mods.ftbbackups.archival.ArchivePluginManager;
 import dev.ftb.mods.ftbbackups.archival.FileCopyArchiver;
 import dev.ftb.mods.ftbbackups.archival.ZipArchiver;
 import dev.ftb.mods.ftbbackups.client.BackupsClient;
+import dev.ftb.mods.ftbbackups.config.FTBBackupsClientConfig;
+import dev.ftb.mods.ftbbackups.config.FTBBackupsServerConfig;
 import dev.ftb.mods.ftbbackups.net.FTBBackupsNetHandler;
 import dev.ftb.mods.ftblibrary.config.manager.ConfigManager;
 import net.minecraft.network.chat.Component;

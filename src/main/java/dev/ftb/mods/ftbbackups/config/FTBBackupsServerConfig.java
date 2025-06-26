@@ -1,8 +1,10 @@
-package dev.ftb.mods.ftbbackups;
+package dev.ftb.mods.ftbbackups.config;
 
 
+import dev.ftb.mods.ftbbackups.BackupUtils;
+import dev.ftb.mods.ftbbackups.Backups;
+import dev.ftb.mods.ftbbackups.FTBBackups;
 import dev.ftb.mods.ftbbackups.archival.ZipArchiver;
-import dev.ftb.mods.ftbbackups.config.ArchivalPluginValue;
 import dev.ftb.mods.ftblibrary.snbt.config.*;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.loading.FMLPaths;

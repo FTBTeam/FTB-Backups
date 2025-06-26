@@ -2,7 +2,7 @@ package dev.ftb.mods.ftbbackups.net;
 
 import dev.ftb.mods.ftbbackups.Backups;
 import dev.ftb.mods.ftbbackups.FTBBackups;
-import dev.ftb.mods.ftbbackups.FTBBackupsServerConfig;
+import dev.ftb.mods.ftbbackups.config.FTBBackupsServerConfig;
 import dev.ftb.mods.ftbbackups.client.BackupsClient;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
