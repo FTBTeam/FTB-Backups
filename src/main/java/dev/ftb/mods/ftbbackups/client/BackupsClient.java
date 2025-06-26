@@ -54,7 +54,9 @@ public class BackupsClient {
     @SubscribeEvent
     public static void registerGuiLayer(RegisterGuiLayersEvent event) {
         // needs to be done with SubscribeEvent, addListener() is called too late
-        event.registerAboveAll(BackupOverlayLayer.ID, new BackupOverlayLayer());
+        if (!FTBBackups.isDisabledByEnvironmentVar()) {
+            event.registerAboveAll(BackupOverlayLayer.ID, new BackupOverlayLayer());
+        }
     }
 
     public static void setBackupProgress(int current, int total) {

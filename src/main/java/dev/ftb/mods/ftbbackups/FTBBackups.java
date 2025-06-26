@@ -28,12 +28,18 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import org.slf4j.LoggerFactory;
 
 @Mod(FTBBackups.MOD_ID)
 public class FTBBackups {
     public static final String MOD_ID = "ftbbackups3";
 
     public FTBBackups(IEventBus eventBus, ModContainer container) {
+        if (isDisabledByEnvironmentVar()) {
+            LoggerFactory.getLogger(MOD_ID).info("FTB Backups 3 is disabled by environment variable! (FTB_BACKUPS_DISABLED is set)");
+            return;
+        }
+
         if (FMLEnvironment.dist == Dist.CLIENT) {
             eventBus.<FMLClientSetupEvent>addListener(event -> BackupsClient.onModConstruction());
         }
@@ -91,6 +97,10 @@ public class FTBBackups {
 
     public void levelTick(ServerTickEvent.Post event) {
         Backups.getServerInstance().tick(event.getServer(), System.currentTimeMillis());
+    }
+
+    public static boolean isDisabledByEnvironmentVar() {
+        return System.getenv().containsKey("FTB_BACKUPS_DISABLED");
     }
 
     public static ResourceLocation id(String path) {
