@@ -3,8 +3,8 @@
 ## ⚠ Legacy!
 
 > FTB Backups (1) is only available for Minecraft version up to 1.16.5
-
-For newer versions, see [FTB Backups 2](https://github.com/FTBTeam/FTB-Backups-2) (1.18.2 -> 1.21.5), and [FTB Backups 3](https://github.com/FTBTeam/FTB-Backups-3) (1.21.1 -> present)
+>
+> For newer versions, see [FTB Backups 2](https://github.com/FTBTeam/FTB-Backups-2) (1.18.2 -> 1.21.5), and [FTB Backups 3](https://github.com/FTBTeam/FTB-Backups-3) (1.21.1 -> present)
 
 ![](https://cdn.feed-the-beast.com/mods/ftb-backups/1Adj8E.webp)
 
