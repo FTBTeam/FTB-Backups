@@ -8,12 +8,14 @@ buildscript {
 	dependencies {
 		classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
 		classpath 'gradle.plugin.com.matthewprenger:CurseGradle:1.1.0'
+		classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.3'
 	}
 }
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'com.matthewprenger.cursegradle'
 apply plugin: 'maven'
+apply plugin: 'com.github.johnrengelman.plugin-shadow'
 
 apply from: 'https://files.latmod.com/public/markdown-git-changelog.gradle'
 
@@ -75,11 +77,20 @@ minecraft {
 	}
 }
 
+configurations {
+	shade
+	implementation.extendsFrom shade
+}
+
 dependencies {
 	minecraft "net.minecraftforge:forge:${forge_version}"
+
+	shade 'org.apache.commons:commons-compress:1.21'
+	shade 'org.tukaani:xz:1.9'
 }
 
 jar {
+	setClassifier('slim')
 	manifest {
 		attributes([
 				"Specification-Title"     : project.mod_id,
@@ -93,10 +104,16 @@ jar {
 	}
 }
 
-def reobfFile = file("$buildDir/reobfJar/output.jar")
-def reobfArtifact = artifacts.add('default', reobfFile) {
-	type 'jar'
-	builtBy 'reobfJar'
+shadowJar {
+	setClassifier(null)
+	configurations = [project.configurations.shade]
+	finalizedBy 'reobfShadowJar'
+}
+
+assemble.dependsOn(shadowJar)
+
+reobf {
+	shadowJar {}
 }
 
 if (ENV.CURSEFORGE_KEY) {
@@ -104,6 +121,7 @@ if (ENV.CURSEFORGE_KEY) {
 		apiKey = ENV.CURSEFORGE_KEY
 		project {
 			id = project.curseforge_id
+			mainArtifact reobfShadowJar
 			releaseType = project.curseforge_type
 			addGameVersion '1.16.5'
 			changelog = getGitChangelog
